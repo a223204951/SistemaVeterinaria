@@ -10,18 +10,64 @@ namespace CapaNegocio
 {
     public class CN_Cliente
     {
-        private CD_Cliente objetoCD = new CD_Cliente();
-
-        public DataTable MostrarClientes()
+        // MÉTODO LISTAR
+        // QUE LLAMA AL MÉTODO LISTAR DE LA CLASE CD_CLIENTE DE LA CAPADATOS
+        public static DataTable Listar()
         {
-            DataTable tabla = new DataTable();
-            tabla = objetoCD.Mostrar();
-            return tabla;
+            CD_Cliente Datos = new CD_Cliente();
+            return Datos.Listar();
         }
 
-        public void InsertarCliente(string nombre, string telefono, string direccion, string estado)
+        // MÉTODO GUARDAR
+        // QUE LLAMA AL MÉTODO GUARDAR DE LA CLASE CD_CLIENTE DE LA CAPADATOS
+        public static string Guardar(string nombre, string telefono, string direccion, string estado)
         {
-            objetoCD.Insertar(nombre, telefono, direccion, estado);
+            CD_Cliente Datos = new CD_Cliente();
+            Datos.Nombre = nombre;
+            Datos.Telefono = telefono;
+            Datos.Direccion = direccion;
+            Datos.Estado = estado;
+            return Datos.Guardar(Datos);
+        }
+
+        // MÉTODO EDITAR
+        // QUE LLAMA AL MÉTODO EDITAR DE LA CLASE CD_CLIENTE DE LA CAPADATOS
+        public static string Editar(int idcliente, string nombre, string telefono, string direccion, string estado)
+        {
+            CD_Cliente Datos = new CD_Cliente();
+            Datos.Idcliente = idcliente;
+            Datos.Nombre = nombre;
+            Datos.Telefono = telefono;
+            Datos.Direccion = direccion;
+            Datos.Estado = estado;
+            return Datos.Editar(Datos);
+        }
+
+        // MÉTODO ELIMINAR
+        // QUE LLAMA AL MÉTODO ELIMINAR DE LA CLASE CD_CLIENTE DE LA CAPADATOS
+        public static string Eliminar(int idcliente)
+        {
+            CD_Cliente Datos = new CD_Cliente();
+            Datos.Idcliente = idcliente;
+            return Datos.Eliminar(Datos);
+        }
+
+        // MÉTODO BUSCARNOMBRE
+        // QUE LLAMA AL MÉTODO BUSCARNOMBRE DE LA CLASE CD_CLIENTE DE LA CAPADATOS
+        public static DataTable BuscarNombre(string textobuscar)
+        {
+            CD_Cliente Datos = new CD_Cliente();
+            Datos.Buscar = textobuscar;
+            return Datos.BuscarNombre(Datos);
+        }
+
+        // MÉTODO BUSCARID
+        // QUE LLAMA AL MÉTODO BUSCARID DE LA CLASE CD_CLIENTE DE LA CAPADATOS
+        public static DataTable BuscarId(string textobuscar)
+        {
+            CD_Cliente Datos = new CD_Cliente();
+            Datos.Buscar = textobuscar;
+            return Datos.BuscarId(Datos);
         }
     }
 }
