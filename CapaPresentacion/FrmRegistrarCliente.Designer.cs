@@ -1,4 +1,6 @@
-﻿namespace CapaPresentacion
+﻿using System;
+
+namespace CapaPresentacion
 {
     partial class FrmRegistrarCliente
     {
@@ -179,11 +181,28 @@
             this.Controls.Add(this.label5);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "FrmRegistrarCliente";
             this.Text = "FrmRegistrarCliente";
+            this.Load += new System.EventHandler(this.FrmRegistrarCliente_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void label5_Click(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion
@@ -193,13 +212,13 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label7;
-        private System.Windows.Forms.TextBox txtnombre;
-        private System.Windows.Forms.TextBox txtdireccion;
-        private System.Windows.Forms.TextBox txttelefono;
-        private System.Windows.Forms.RadioButton rbtnactivo;
-        private System.Windows.Forms.RadioButton rbtninactivo;
         private System.Windows.Forms.Button btncancelar;
         private System.Windows.Forms.Button btnguardar;
-        private System.Windows.Forms.TextBox txtidcliente;
+        public System.Windows.Forms.TextBox txtnombre;
+        public System.Windows.Forms.TextBox txtdireccion;
+        public System.Windows.Forms.TextBox txttelefono;
+        public System.Windows.Forms.RadioButton rbtnactivo;
+        public System.Windows.Forms.RadioButton rbtninactivo;
+        public System.Windows.Forms.TextBox txtidcliente;
     }
 }

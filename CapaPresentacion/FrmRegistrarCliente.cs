@@ -8,28 +8,24 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+
+using CapaNegocio;
+
 namespace CapaPresentacion
 {
     public partial class FrmRegistrarCliente : Form
     {
+        public bool Insert = false;
+        public bool Edit = false;
         public FrmRegistrarCliente()
         {
             InitializeComponent();
         }
 
-        private void label1_Click(object sender, EventArgs e)
+        private void FrmRegistrarCliente_Load(object sender, EventArgs e)
         {
-
-        }
-
-        private void label5_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-
+            this.Top = 0;
+            this.Left = 0;
         }
     }
 }
