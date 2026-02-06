@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using System.Data;
 using System.Data.SqlClient;
 
@@ -11,6 +10,7 @@ namespace CapaDatos
 {
     public class CD_Cliente
     {
+        // PROPIEDADES
         public int Idcliente { get; set; }
         public string Nombre { get; set; }
         public string Telefono { get; set; }
@@ -21,21 +21,21 @@ namespace CapaDatos
         // MÉTODO LISTAR CLIENTES
         public DataTable Listar()
         {
-            DataTable resul = new DataTable("Cliente");
+            DataTable resultado = new DataTable("Cliente");
             SqlConnection conexion = new SqlConnection();
 
             try
             {
                 conexion.ConnectionString = CD_Conexion.Conn;
-                SqlCommand Cmd = new SqlCommand("sp_list_cliente", conexion);
-                Cmd.CommandType = CommandType.StoredProcedure;
+                SqlCommand cmd = new SqlCommand("dbo.sp_list_cliente", conexion);
+                cmd.CommandType = CommandType.StoredProcedure;
 
-                SqlDataAdapter SqlDat = new SqlDataAdapter(Cmd);
-                SqlDat.Fill(resul);
+                SqlDataAdapter sqlDat = new SqlDataAdapter(cmd);
+                sqlDat.Fill(resultado);
             }
             catch (Exception ex)
             {
-                resul = null;
+                resultado = null;
                 throw ex;
             }
             finally
@@ -46,28 +46,29 @@ namespace CapaDatos
                 }
             }
 
-            return resul;
+            return resultado;
         }
 
         // MÉTODO GUARDAR CLIENTE
-        public string Guardar(CD_Cliente Cli)
+        public string Guardar(CD_Cliente cli)
         {
             string resultado = "";
             SqlConnection conexion = new SqlConnection();
+
             try
             {
                 conexion.ConnectionString = CD_Conexion.Conn;
                 conexion.Open();
-                SqlCommand Cmd = new SqlCommand("sp_insert_cliente", conexion);
-                Cmd.CommandType = CommandType.StoredProcedure;
+                SqlCommand cmd = new SqlCommand("dbo.sp_insert_cliente", conexion);
+                cmd.CommandType = CommandType.StoredProcedure;
 
-                Cmd.Parameters.AddWithValue("@idcliente", SqlDbType.Int).Direction = ParameterDirection.Output;
-                Cmd.Parameters.AddWithValue("@nombre", Cli.Nombre);
-                Cmd.Parameters.AddWithValue("@telefono", Cli.Telefono);
-                Cmd.Parameters.AddWithValue("@direccion", Cli.Direccion);
-                Cmd.Parameters.AddWithValue("@estado", Cli.Estado);
+                cmd.Parameters.AddWithValue("@nombre", cli.Nombre);
+                cmd.Parameters.AddWithValue("@telefono", cli.Telefono);
+                cmd.Parameters.AddWithValue("@direccion", cli.Direccion);
+                cmd.Parameters.AddWithValue("@estado", cli.Estado);
 
-                resultado = Cmd.ExecuteNonQuery() == 1 ? "OK" : "No se pudo insertar el registro";
+                // CORRECCIÓN: Verificar que se ejecute correctamente
+                resultado = cmd.ExecuteNonQuery() == 1 ? "OK" : "No se pudo insertar el registro";
             }
             catch (Exception ex)
             {
@@ -80,6 +81,7 @@ namespace CapaDatos
                     conexion.Close();
                 }
             }
+
             return resultado;
         }
 
@@ -88,19 +90,22 @@ namespace CapaDatos
         {
             string resultado = "";
             SqlConnection conexion = new SqlConnection();
+
             try
             {
                 conexion.ConnectionString = CD_Conexion.Conn;
                 conexion.Open();
-                SqlCommand Cmd = new SqlCommand("sp_update_cliente", conexion);
-                Cmd.CommandType = CommandType.StoredProcedure;
+                SqlCommand cmd = new SqlCommand("dbo.sp_update_cliente", conexion);
+                cmd.CommandType = CommandType.StoredProcedure;
 
-                Cmd.Parameters.AddWithValue("@idcliente", cli.Idcliente);
-                Cmd.Parameters.AddWithValue("@nombre", cli.Nombre);
-                Cmd.Parameters.AddWithValue("@telefono", cli.Telefono);
-                Cmd.Parameters.AddWithValue("@direccion", cli.Direccion);
-                Cmd.Parameters.AddWithValue("@estado", cli.Estado);
-                resultado = Cmd.ExecuteNonQuery() == 1 ? "OK" : "No se pudo actualizar el registro";
+                cmd.Parameters.AddWithValue("@idcliente", cli.Idcliente);
+                cmd.Parameters.AddWithValue("@nombre", cli.Nombre);
+                cmd.Parameters.AddWithValue("@telefono", cli.Telefono);
+                cmd.Parameters.AddWithValue("@direccion", cli.Direccion);
+                cmd.Parameters.AddWithValue("@estado", cli.Estado);
+
+                // CORRECCIÓN: Verificar que se ejecute correctamente
+                resultado = cmd.ExecuteNonQuery() == 1 ? "OK" : "No se pudo actualizar el registro";
             }
             catch (Exception ex)
             {
@@ -113,6 +118,7 @@ namespace CapaDatos
                     conexion.Close();
                 }
             }
+
             return resultado;
         }
 
@@ -121,16 +127,18 @@ namespace CapaDatos
         {
             string resultado = "";
             SqlConnection conexion = new SqlConnection();
+
             try
             {
                 conexion.ConnectionString = CD_Conexion.Conn;
                 conexion.Open();
-                SqlCommand Cmd = new SqlCommand("sp_delete_cliente", conexion);
-                Cmd.CommandType = CommandType.StoredProcedure;
+                SqlCommand cmd = new SqlCommand("dbo.sp_delete_cliente", conexion);
+                cmd.CommandType = CommandType.StoredProcedure;
 
-                Cmd.Parameters.AddWithValue("@idcliente", cli.Idcliente);
+                cmd.Parameters.AddWithValue("@idcliente", cli.Idcliente);
 
-                resultado = Cmd.ExecuteNonQuery() == 1 ? "OK" : "No se pudo eliminar el registro";
+                // CORRECCIÓN: Verificar que se ejecute correctamente
+                resultado = cmd.ExecuteNonQuery() == 1 ? "OK" : "No se pudo eliminar el registro";
             }
             catch (Exception ex)
             {
@@ -143,6 +151,7 @@ namespace CapaDatos
                     conexion.Close();
                 }
             }
+
             return resultado;
         }
 
@@ -151,14 +160,16 @@ namespace CapaDatos
         {
             DataTable resultado = new DataTable("Cliente");
             SqlConnection conexion = new SqlConnection();
+
             try
             {
                 conexion.ConnectionString = CD_Conexion.Conn;
-                SqlCommand Cmd = new SqlCommand("sp_buscar_cliente_nombre", conexion);
-                Cmd.CommandType = CommandType.StoredProcedure;
-                Cmd.Parameters.AddWithValue("@nombre", cli.Buscar);
-                SqlDataAdapter SqlDat = new SqlDataAdapter(Cmd);
-                SqlDat.Fill(resultado);
+                SqlCommand cmd = new SqlCommand("dbo.sp_buscar_cliente_nombre", conexion);
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@buscar", cli.Buscar);
+
+                SqlDataAdapter sqlDat = new SqlDataAdapter(cmd);
+                sqlDat.Fill(resultado);
             }
             catch (Exception ex)
             {
@@ -172,6 +183,7 @@ namespace CapaDatos
                     conexion.Close();
                 }
             }
+
             return resultado;
         }
 
@@ -180,14 +192,16 @@ namespace CapaDatos
         {
             DataTable resultado = new DataTable("Cliente");
             SqlConnection conexion = new SqlConnection();
+
             try
             {
                 conexion.ConnectionString = CD_Conexion.Conn;
-                SqlCommand Cmd = new SqlCommand("sp_buscar_cliente_id", conexion);
-                Cmd.CommandType = CommandType.StoredProcedure;
-                Cmd.Parameters.AddWithValue("@id", cli.Buscar);
-                SqlDataAdapter SqlDat = new SqlDataAdapter(Cmd);
-                SqlDat.Fill(resultado);
+                SqlCommand cmd = new SqlCommand("dbo.sp_buscar_cliente_id", conexion);
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@buscar", cli.Buscar);
+
+                SqlDataAdapter sqlDat = new SqlDataAdapter(cmd);
+                sqlDat.Fill(resultado);
             }
             catch (Exception ex)
             {
@@ -201,6 +215,7 @@ namespace CapaDatos
                     conexion.Close();
                 }
             }
+
             return resultado;
         }
     }

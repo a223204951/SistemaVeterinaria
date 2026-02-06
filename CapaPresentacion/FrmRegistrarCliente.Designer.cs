@@ -48,13 +48,12 @@ namespace CapaPresentacion
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label1.Location = new System.Drawing.Point(22, 19);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(244, 20);
+            this.label1.Size = new System.Drawing.Size(313, 25);
             this.label1.TabIndex = 0;
             this.label1.Text = "REGISTRAR NUEVO CLIENTE";
-            this.label1.Click += new System.EventHandler(this.label1_Click);
             // 
             // label2
             // 
@@ -73,7 +72,6 @@ namespace CapaPresentacion
             this.label5.Size = new System.Drawing.Size(64, 16);
             this.label5.TabIndex = 4;
             this.label5.Text = "Dirección";
-            this.label5.Click += new System.EventHandler(this.label5_Click);
             // 
             // label6
             // 
@@ -89,9 +87,9 @@ namespace CapaPresentacion
             this.label7.AutoSize = true;
             this.label7.Location = new System.Drawing.Point(364, 198);
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(121, 16);
+            this.label7.Size = new System.Drawing.Size(50, 16);
             this.label7.TabIndex = 6;
-            this.label7.Text = "Seleccione Estado";
+            this.label7.Text = "Estado";
             // 
             // txtnombre
             // 
@@ -138,26 +136,27 @@ namespace CapaPresentacion
             // 
             // btncancelar
             // 
-            this.btncancelar.Location = new System.Drawing.Point(440, 308);
+            this.btncancelar.Location = new System.Drawing.Point(550, 308);
             this.btncancelar.Name = "btncancelar";
             this.btncancelar.Size = new System.Drawing.Size(75, 23);
             this.btncancelar.TabIndex = 14;
             this.btncancelar.Text = "&Cancelar";
             this.btncancelar.UseVisualStyleBackColor = true;
+            this.btncancelar.Click += new System.EventHandler(this.btncancelar_Click);
             // 
             // btnguardar
             // 
-            this.btnguardar.Location = new System.Drawing.Point(550, 308);
+            this.btnguardar.Location = new System.Drawing.Point(432, 308);
             this.btnguardar.Name = "btnguardar";
             this.btnguardar.Size = new System.Drawing.Size(75, 23);
             this.btnguardar.TabIndex = 15;
             this.btnguardar.Text = "&Guardar";
             this.btnguardar.UseVisualStyleBackColor = true;
-            this.btnguardar.Click += new System.EventHandler(this.button2_Click);
+            this.btnguardar.Click += new System.EventHandler(this.btnguardar_Click);
             // 
             // txtidcliente
             // 
-            this.txtidcliente.Location = new System.Drawing.Point(26, 42);
+            this.txtidcliente.Location = new System.Drawing.Point(27, 47);
             this.txtidcliente.Name = "txtidcliente";
             this.txtidcliente.Size = new System.Drawing.Size(100, 22);
             this.txtidcliente.TabIndex = 16;
@@ -167,7 +166,7 @@ namespace CapaPresentacion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(699, 450);
+            this.ClientSize = new System.Drawing.Size(699, 374);
             this.Controls.Add(this.txtidcliente);
             this.Controls.Add(this.btnguardar);
             this.Controls.Add(this.btncancelar);
@@ -181,28 +180,14 @@ namespace CapaPresentacion
             this.Controls.Add(this.label5);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Name = "FrmRegistrarCliente";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "FrmRegistrarCliente";
             this.Load += new System.EventHandler(this.FrmRegistrarCliente_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void label5_Click(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
         }
 
         #endregion
