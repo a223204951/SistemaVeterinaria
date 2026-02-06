@@ -17,7 +17,7 @@ namespace SistemaVeterinaria
 
             // Le decimos que inicie el LOGIN que está en la otra capa
             Application.Run(new FrmLogin());
-            // PRUEBA COMENTARIO
+
         }
     }
 }
