@@ -72,7 +72,8 @@ namespace CapaPresentacion
                         txtnombre.Text.Trim(),
                         txttelefono.Text.Trim(),
                         txtdireccion.Text.Trim(),
-                        estado
+                        estado,
+                        FrmLogin.UsuarioActual
                     );
 
                     if (resultado == "OK")
@@ -99,7 +100,8 @@ namespace CapaPresentacion
                         txtnombre.Text.Trim(),
                         txttelefono.Text.Trim(),
                         txtdireccion.Text.Trim(),
-                        estado
+                        estado,
+                        FrmLogin.UsuarioActual
                     );
 
                     if (resultado == "OK")
@@ -155,6 +157,7 @@ namespace CapaPresentacion
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
+
         }
 
         // EVENTO CLICK DEL BOTÓN CANCELAR

@@ -17,6 +17,7 @@ namespace CapaDatos
         public string Direccion { get; set; }
         public string Estado { get; set; }
         public string Buscar { get; set; }
+        public string Usuario { get; set; } // PARA AUDITORÍA
 
         // MÉTODO LISTAR CLIENTES
         public DataTable Listar()
@@ -66,9 +67,13 @@ namespace CapaDatos
                 cmd.Parameters.AddWithValue("@telefono", cli.Telefono);
                 cmd.Parameters.AddWithValue("@direccion", cli.Direccion);
                 cmd.Parameters.AddWithValue("@estado", cli.Estado);
+                cmd.Parameters.AddWithValue("@usuario", string.IsNullOrEmpty(cli.Usuario) ? "SISTEMA" : cli.Usuario);
 
-                // CORRECCIÓN: Verificar que se ejecute correctamente
-                resultado = cmd.ExecuteNonQuery() == 1 ? "OK" : "No se pudo insertar el registro";
+                // Leer el resultado del SELECT que retorna el procedimiento
+                object resultObj = cmd.ExecuteScalar();
+                int filasAfectadas = resultObj != null ? Convert.ToInt32(resultObj) : 0;
+
+                resultado = filasAfectadas >= 1 ? "OK" : "No se pudo insertar el registro";
             }
             catch (Exception ex)
             {
@@ -103,9 +108,13 @@ namespace CapaDatos
                 cmd.Parameters.AddWithValue("@telefono", cli.Telefono);
                 cmd.Parameters.AddWithValue("@direccion", cli.Direccion);
                 cmd.Parameters.AddWithValue("@estado", cli.Estado);
+                cmd.Parameters.AddWithValue("@usuario", string.IsNullOrEmpty(cli.Usuario) ? "SISTEMA" : cli.Usuario);
 
-                // CORRECCIÓN: Verificar que se ejecute correctamente
-                resultado = cmd.ExecuteNonQuery() == 1 ? "OK" : "No se pudo actualizar el registro";
+                // Leer el resultado del SELECT que retorna el procedimiento
+                object resultObj = cmd.ExecuteScalar();
+                int filasAfectadas = resultObj != null ? Convert.ToInt32(resultObj) : 0;
+
+                resultado = filasAfectadas >= 1 ? "OK" : "No se pudo actualizar el registro";
             }
             catch (Exception ex)
             {
@@ -136,9 +145,13 @@ namespace CapaDatos
                 cmd.CommandType = CommandType.StoredProcedure;
 
                 cmd.Parameters.AddWithValue("@idcliente", cli.Idcliente);
+                cmd.Parameters.AddWithValue("@usuario", string.IsNullOrEmpty(cli.Usuario) ? "SISTEMA" : cli.Usuario);
 
-                // CORRECCIÓN: Verificar que se ejecute correctamente
-                resultado = cmd.ExecuteNonQuery() == 1 ? "OK" : "No se pudo eliminar el registro";
+                // Leer el resultado del SELECT que retorna el procedimiento
+                object resultObj = cmd.ExecuteScalar();
+                int filasAfectadas = resultObj != null ? Convert.ToInt32(resultObj) : 0;
+
+                resultado = filasAfectadas >= 1 ? "OK" : "No se pudo eliminar el registro";
             }
             catch (Exception ex)
             {

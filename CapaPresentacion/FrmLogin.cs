@@ -15,6 +15,9 @@ namespace CapaPresentacion
     // CONTRASEÑA: 1234
     public partial class FrmLogin : Form
     {
+        // Variable estática para guardar el usuario actual
+        public static string UsuarioActual = "";
+
         public FrmLogin()
         {
             InitializeComponent();
@@ -60,11 +63,15 @@ namespace CapaPresentacion
 
             if (respuesta)
             {
+                // GUARDAR USUARIO ACTUAL
+                UsuarioActual = txtUsuario.Text;
+
                 // Si las credenciales son correctas, abrir el listado de clientes
                 this.Hide(); // Ocultar el login (NO cerrar)
 
                 FrmListadoCliente menu = new FrmListadoCliente();
                 menu.Show();
+                menu.FormClosed += (s, args) => this.Close();
 
                 // IMPORTANTE: Ya no vinculamos FormClosed aquí
                 // Si cierran el menú, solo volvemos al login

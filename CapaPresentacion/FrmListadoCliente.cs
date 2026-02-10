@@ -134,7 +134,7 @@ namespace CapaPresentacion
                     if (opcion == DialogResult.OK)
                     {
                         string idcliente = dlistado.CurrentRow.Cells["idcliente"].Value.ToString();
-                        string resultado = CN_Cliente.Eliminar(Convert.ToInt32(idcliente));
+                        string resultado = CN_Cliente.Eliminar(Convert.ToInt32(idcliente), FrmLogin.UsuarioActual);
 
                         if (resultado == "OK")
                         {

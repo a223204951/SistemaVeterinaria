@@ -19,21 +19,22 @@ namespace CapaNegocio
         }
 
         // MÉTODO GUARDAR CLIENTE
-        public static string Guardar(string nombre, string telefono, string direccion, string estado)
+        public static string Guardar(string nombre, string telefono, string direccion, string estado, string usuario = "SISTEMA")
         {
             CD_Cliente obj = new CD_Cliente
             {
                 Nombre = nombre,
                 Telefono = telefono,
                 Direccion = direccion,
-                Estado = estado
+                Estado = estado,
+                Usuario = usuario
             };
 
             return objDato.Guardar(obj);
         }
 
         // MÉTODO EDITAR CLIENTE
-        public static string Editar(int idcliente, string nombre, string telefono, string direccion, string estado)
+        public static string Editar(int idcliente, string nombre, string telefono, string direccion, string estado, string usuario = "SISTEMA")
         {
             CD_Cliente obj = new CD_Cliente
             {
@@ -41,18 +42,20 @@ namespace CapaNegocio
                 Nombre = nombre,
                 Telefono = telefono,
                 Direccion = direccion,
-                Estado = estado
+                Estado = estado,
+                Usuario = usuario
             };
 
             return objDato.Editar(obj);
         }
 
         // MÉTODO ELIMINAR CLIENTE
-        public static string Eliminar(int idcliente)
+        public static string Eliminar(int idcliente, string usuario = "SISTEMA")
         {
             CD_Cliente obj = new CD_Cliente
             {
-                Idcliente = idcliente
+                Idcliente = idcliente,
+                Usuario = usuario
             };
 
             return objDato.Eliminar(obj);
