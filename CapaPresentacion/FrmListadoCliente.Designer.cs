@@ -43,6 +43,7 @@ namespace CapaPresentacion
             this.btnnuevo = new System.Windows.Forms.Button();
             this.btneditar = new System.Windows.Forms.Button();
             this.btneliminar = new System.Windows.Forms.Button();
+            this.btnAuditoria = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dlistado)).BeginInit();
@@ -169,6 +170,16 @@ namespace CapaPresentacion
             this.btneliminar.UseVisualStyleBackColor = true;
             this.btneliminar.Click += new System.EventHandler(this.btneliminar_Click);
             // 
+            // btnAuditoria
+            // 
+            this.btnAuditoria.Location = new System.Drawing.Point(12, 411);
+            this.btnAuditoria.Name = "btnAuditoria";
+            this.btnAuditoria.Size = new System.Drawing.Size(100, 23);
+            this.btnAuditoria.TabIndex = 7;
+            this.btnAuditoria.Text = "&Auditoría";
+            this.btnAuditoria.UseVisualStyleBackColor = true;
+            this.btnAuditoria.Click += new System.EventHandler(this.btnAuditoria_Click);
+            // 
             // FrmListadoCliente
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -177,6 +188,7 @@ namespace CapaPresentacion
             this.Controls.Add(this.btneliminar);
             this.Controls.Add(this.btneditar);
             this.Controls.Add(this.btnnuevo);
+            this.Controls.Add(this.btnAuditoria);
             this.Controls.Add(this.dlistado);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.label1);
@@ -209,5 +221,6 @@ namespace CapaPresentacion
         private System.Windows.Forms.Button btnnuevo;
         private System.Windows.Forms.Button btneditar;
         private System.Windows.Forms.Button btneliminar;
+        private System.Windows.Forms.Button btnAuditoria;
     }
 }

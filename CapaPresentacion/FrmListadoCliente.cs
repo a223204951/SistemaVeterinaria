@@ -25,6 +25,16 @@ namespace CapaPresentacion
             this.Left = 0;
 
             Mostrar();
+
+            // Mostrar botón de auditoría solo si es admin
+            if (FrmLogin.UsuarioActual.ToLower() == "admin")
+            {
+                btnAuditoria.Visible = true;
+            }
+            else
+            {
+                btnAuditoria.Visible = false;
+            }
         }
 
         // MÉTODO PARA MOSTRAR TODOS LOS CLIENTES EN EL DATAGRIDVIEW
@@ -202,6 +212,24 @@ namespace CapaPresentacion
 
                 // Cerrar el formulario de listado
                 this.Close();
+            }
+        }
+
+        // EVENTO CLICK DEL BOTÓN AUDITORÍA (SOLO ADMIN)
+        private void btnAuditoria_Click(object sender, EventArgs e)
+        {
+            // Verificar que solo el admin pueda acceder
+            if (FrmLogin.UsuarioActual.ToLower() == "admin")
+            {
+                FrmAuditoria formAuditoria = new FrmAuditoria();
+                formAuditoria.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show("Solo el administrador puede acceder a la auditoría",
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
             }
         }
     }
