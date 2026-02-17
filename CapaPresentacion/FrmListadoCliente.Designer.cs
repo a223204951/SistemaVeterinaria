@@ -44,6 +44,7 @@ namespace CapaPresentacion
             this.btneditar = new System.Windows.Forms.Button();
             this.btneliminar = new System.Windows.Forms.Button();
             this.btnAuditoria = new System.Windows.Forms.Button();
+            this.btnSesiones = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dlistado)).BeginInit();
@@ -180,6 +181,16 @@ namespace CapaPresentacion
             this.btnAuditoria.UseVisualStyleBackColor = true;
             this.btnAuditoria.Click += new System.EventHandler(this.btnAuditoria_Click);
             // 
+            // btnSesiones
+            // 
+            this.btnSesiones.Location = new System.Drawing.Point(118, 411);
+            this.btnSesiones.Name = "btnSesiones";
+            this.btnSesiones.Size = new System.Drawing.Size(100, 23);
+            this.btnSesiones.TabIndex = 8;
+            this.btnSesiones.Text = "&Sesiones";
+            this.btnSesiones.UseVisualStyleBackColor = true;
+            this.btnSesiones.Click += new System.EventHandler(this.btnSesiones_Click);
+            // 
             // FrmListadoCliente
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -189,6 +200,7 @@ namespace CapaPresentacion
             this.Controls.Add(this.btneditar);
             this.Controls.Add(this.btnnuevo);
             this.Controls.Add(this.btnAuditoria);
+            this.Controls.Add(this.btnSesiones);
             this.Controls.Add(this.dlistado);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.label1);
@@ -222,5 +234,6 @@ namespace CapaPresentacion
         private System.Windows.Forms.Button btneditar;
         private System.Windows.Forms.Button btneliminar;
         private System.Windows.Forms.Button btnAuditoria;
+        private System.Windows.Forms.Button btnSesiones;
     }
 }

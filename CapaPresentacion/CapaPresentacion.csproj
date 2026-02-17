@@ -67,9 +67,19 @@
     <Compile Include="FrmRegistrarCliente.Designer.cs">
       <DependentUpon>FrmRegistrarCliente.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmSesiones.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmSesiones.Designer.cs">
+      <DependentUpon>FrmSesiones.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CapaDatos\CapaDatos.csproj">
+      <Project>{62AD9FF4-9357-434E-9AC8-9ED7AEB66420}</Project>
+      <Name>CapaDatos</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CapaNegocio\CapaNegocio.csproj">
       <Project>{5c1e5385-51cd-42c9-8efc-ab1d0029e032}</Project>
       <Name>CapaNegocio</Name>
@@ -87,6 +97,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FrmRegistrarCliente.resx">
       <DependentUpon>FrmRegistrarCliente.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmSesiones.resx">
+      <DependentUpon>FrmSesiones.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

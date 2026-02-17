@@ -26,15 +26,10 @@ namespace CapaPresentacion
 
             Mostrar();
 
-            // Mostrar botón de auditoría solo si es admin
-            if (FrmLogin.UsuarioActual.ToLower() == "admin")
-            {
-                btnAuditoria.Visible = true;
-            }
-            else
-            {
-                btnAuditoria.Visible = false;
-            }
+            // Mostrar botones de admin solo si es admin
+            bool esAdmin = FrmLogin.UsuarioActual.ToLower() == "admin";
+            btnAuditoria.Visible = esAdmin;
+            btnSesiones.Visible = esAdmin;
         }
 
         // MÉTODO PARA MOSTRAR TODOS LOS CLIENTES EN EL DATAGRIDVIEW
@@ -184,35 +179,17 @@ namespace CapaPresentacion
         // EVENTO CLICK DEL BOTÓN SALIR
         private void btnsalir_Click(object sender, EventArgs e)
         {
-            DialogResult resultado = MessageBox.Show(
-                "¿Está seguro que desea cerrar sesión?",
-                "Sistema Veterinaria",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-
-            if (resultado == DialogResult.Yes)
+            // REGISTRAR CIERRE DE SESIÓN
+            if (FrmLogin.IdSesionActual > 0)
             {
-                // Buscar si hay un formulario de login abierto (oculto)
-                FrmLogin login = (FrmLogin)Application.OpenForms["FrmLogin"];
-
-                if (login != null)
-                {
-                    // Si existe, mostrarlo
-                    login.Show();
-                    login.txtUsuario.Clear();
-                    login.txtPass.Clear();
-                    login.txtUsuario.Focus();
-                }
-                else
-                {
-                    // Si no existe, crear uno nuevo
-                    login = new FrmLogin();
-                    login.Show();
-                }
-
-                // Cerrar el formulario de listado
-                this.Close();
+                CN_Sesion.CerrarSesion(FrmLogin.IdSesionActual);
+                FrmLogin.IdSesionActual = 0;
             }
+
+            // Volver al login
+            FrmLogin login = new FrmLogin();
+            login.Show();
+            this.Close();
         }
 
         // EVENTO CLICK DEL BOTÓN AUDITORÍA (SOLO ADMIN)
@@ -227,6 +204,22 @@ namespace CapaPresentacion
             else
             {
                 MessageBox.Show("Solo el administrador puede acceder a la auditoría",
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+        }
+        // EVENTO CLICK DEL BOTÓN SESIONES (SOLO ADMIN)
+        private void btnSesiones_Click(object sender, EventArgs e)
+        {
+            if (FrmLogin.UsuarioActual.ToLower() == "admin")
+            {
+                FrmSesiones formSesiones = new FrmSesiones();
+                formSesiones.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show("Solo el administrador puede ver las sesiones",
                     "Sistema Veterinaria",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);

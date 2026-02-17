@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CapaNegocio;
+using CapaDatos;
 
 namespace CapaPresentacion
 {
@@ -15,8 +16,9 @@ namespace CapaPresentacion
     // CONTRASEÑA: 1234
     public partial class FrmLogin : Form
     {
-        // Variable estática para guardar el usuario actual
+        // VARIABLES ESTÁTICAS PARA LA SESIÓN ACTUAL
         public static string UsuarioActual = "";
+        public static int IdSesionActual = 0;
 
         public FrmLogin()
         {
@@ -26,6 +28,12 @@ namespace CapaPresentacion
         // EVENTO LOAD DEL FORMULARIO
         private void FrmLogin_Load(object sender, EventArgs e)
         {
+            // Cerrar sesiones huérfanas al iniciar
+            try
+            {
+                CD_Sesion sesionDato = new CD_Sesion();
+            }
+            catch { }
         }
 
         // EVENTO CLICK DEL BOTÓN SALIR
@@ -37,7 +45,7 @@ namespace CapaPresentacion
         // EVENTO CLICK DEL BOTÓN INGRESAR
         private void btnIngresar_Click(object sender, EventArgs e)
         {
-            // Validar que los campos no estén vacíos
+            // Validar campos vacíos
             if (string.IsNullOrWhiteSpace(txtUsuario.Text))
             {
                 MessageBox.Show("Ingrese el nombre de usuario",
@@ -47,6 +55,7 @@ namespace CapaPresentacion
                 txtUsuario.Focus();
                 return;
             }
+
             if (string.IsNullOrWhiteSpace(txtPass.Text))
             {
                 MessageBox.Show("Ingrese la contraseña",
@@ -57,7 +66,7 @@ namespace CapaPresentacion
                 return;
             }
 
-            // Validar credenciales con la capa de negocio
+            // Validar credenciales
             CN_Usuario objNegocio = new CN_Usuario();
             bool respuesta = objNegocio.ValidarUsuario(txtUsuario.Text, txtPass.Text);
 
@@ -66,15 +75,25 @@ namespace CapaPresentacion
                 // GUARDAR USUARIO ACTUAL
                 UsuarioActual = txtUsuario.Text;
 
-                // Si las credenciales son correctas, abrir el listado de clientes
-                this.Hide(); // Ocultar el login (NO cerrar)
+                // REGISTRAR INICIO DE SESIÓN
+                IdSesionActual = CN_Sesion.IniciarSesion(UsuarioActual);
 
+                // Abrir listado de clientes
+                this.Hide();
                 FrmListadoCliente menu = new FrmListadoCliente();
                 menu.Show();
-                menu.FormClosed += (s, args) => this.Close();
 
-                // IMPORTANTE: Ya no vinculamos FormClosed aquí
-                // Si cierran el menú, solo volvemos al login
+                // Al cerrar el menú, cerrar sesión y volver al login
+                menu.FormClosed += (s, args) =>
+                {
+                    // REGISTRAR CIERRE DE SESIÓN
+                    if (IdSesionActual > 0)
+                    {
+                        CN_Sesion.CerrarSesion(IdSesionActual);
+                        IdSesionActual = 0;
+                    }
+                    this.Close();
+                };
             }
             else
             {
@@ -83,7 +102,6 @@ namespace CapaPresentacion
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
 
-                // Limpiar los campos y enfocar el campo de usuario
                 txtUsuario.Clear();
                 txtPass.Clear();
                 txtUsuario.Focus();
