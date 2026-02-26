@@ -13,6 +13,7 @@ namespace CapaPresentacion
 {
     public partial class FrmRegistrarCliente : Form
     {
+        // BANDERAS PARA INDICAR SI ES INSERCIÓN O EDICIÓN
         public bool Insert = false;
         public bool Edit = false;
 
@@ -24,23 +25,29 @@ namespace CapaPresentacion
         // EVENTO LOAD DEL FORMULARIO
         private void FrmRegistrarCliente_Load(object sender, EventArgs e)
         {
+            // POSICIONAR EL FORMULARIO EN LA ESQUINA SUPERIOR IZQUIERDA
             this.Top = 0;
             this.Left = 0;
 
-            // Si es inserción, habilitar el RadioButton Activo por defecto
+            // CAMBIAR EL TÍTULO SEGÚN LA OPERACIÓN
             if (Insert)
             {
+                label1.Text = "📝 Registrar Nuevo Cliente";
                 rbtnactivo.Checked = true;
+            }
+            else if (Edit)
+            {
+                label1.Text = "✏️ Editar Cliente";
             }
         }
 
         // EVENTO CLICK DEL BOTÓN GUARDAR
         private void btnguardar_Click(object sender, EventArgs e)
         {
-            // Validar que los campos obligatorios no estén vacíos
+            // VALIDAR QUE EL CAMPO DE NOMBRE NO ESTÉ VACÍO
             if (string.IsNullOrWhiteSpace(txtnombre.Text))
             {
-                MessageBox.Show("Ingrese el nombre del cliente",
+                MessageBox.Show("Por favor, ingrese el nombre del cliente",
                     "Sistema Veterinaria",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
@@ -48,9 +55,10 @@ namespace CapaPresentacion
                 return;
             }
 
+            // VALIDAR QUE EL CAMPO DE TELÉFONO NO ESTÉ VACÍO
             if (string.IsNullOrWhiteSpace(txttelefono.Text))
             {
-                MessageBox.Show("Ingrese el teléfono del cliente",
+                MessageBox.Show("Por favor, ingrese el teléfono del cliente",
                     "Sistema Veterinaria",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
@@ -58,7 +66,7 @@ namespace CapaPresentacion
                 return;
             }
 
-            // Determinar el estado según el RadioButton seleccionado
+            // DETERMINAR EL ESTADO SEGÚN EL RADIOBUTTON SELECCIONADO
             string estado = rbtnactivo.Checked ? "ACTIVO" : "INACTIVO";
 
             try
@@ -67,7 +75,7 @@ namespace CapaPresentacion
 
                 if (Insert)
                 {
-                    // Insertar nuevo cliente
+                    // INSERTAR NUEVO CLIENTE CON EL USUARIO ACTUAL PARA AUDITORÍA
                     resultado = CN_Cliente.Guardar(
                         txtnombre.Text.Trim(),
                         txttelefono.Text.Trim(),
@@ -78,7 +86,7 @@ namespace CapaPresentacion
 
                     if (resultado == "OK")
                     {
-                        MessageBox.Show("Cliente registrado correctamente",
+                        MessageBox.Show("✅ Cliente registrado correctamente",
                             "Sistema Veterinaria",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Information);
@@ -94,7 +102,7 @@ namespace CapaPresentacion
                 }
                 else if (Edit)
                 {
-                    // Editar cliente existente
+                    // EDITAR CLIENTE EXISTENTE CON EL USUARIO ACTUAL PARA AUDITORÍA
                     resultado = CN_Cliente.Editar(
                         Convert.ToInt32(txtidcliente.Text),
                         txtnombre.Text.Trim(),
@@ -106,7 +114,7 @@ namespace CapaPresentacion
 
                     if (resultado == "OK")
                     {
-                        MessageBox.Show("Cliente actualizado correctamente",
+                        MessageBox.Show("✅ Cliente actualizado correctamente",
                             "Sistema Veterinaria",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Information);
@@ -129,12 +137,55 @@ namespace CapaPresentacion
                     return;
                 }
 
-                // Resetear las banderas
+                // RESETEAR LAS BANDERAS
                 this.Insert = false;
                 this.Edit = false;
 
-                // Buscar el formulario de listado que ya existe
-                FrmListadoCliente frm = (FrmListadoCliente)Application.OpenForms["FrmListadoCliente"];
+                // VOLVER AL LISTADO Y REFRESCARLO AUTOMÁTICAMENTE
+                VolverAlListado();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("❌ Error: " + ex.Message + "\n\nDetalles: " + ex.StackTrace,
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        // EVENTO CLICK DEL BOTÓN CANCELAR
+        private void btncancelar_Click(object sender, EventArgs e)
+        {
+            DialogResult resultado = MessageBox.Show(
+                "¿Está seguro que desea cancelar?\n\nLos cambios no guardados se perderán.",
+                "Sistema Veterinaria",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (resultado == DialogResult.Yes)
+            {
+                VolverAlListado();
+            }
+        }
+
+        // MÉTODO PARA VOLVER AL LISTADO DE CLIENTES Y REFRESCARLO
+        private void VolverAlListado()
+        {
+            // BUSCAR EL FORMULARIO DEL MENÚ PRINCIPAL
+            FrmMenuPrincipal menuPrincipal = Application.OpenForms.OfType<FrmMenuPrincipal>().FirstOrDefault();
+
+            if (menuPrincipal != null)
+            {
+                // ESTAMOS DENTRO DEL MENÚ PRINCIPAL
+                this.Close();
+
+                // REFRESCAR EL LISTADO PARA QUE APAREZCA EL NUEVO/EDITADO CLIENTE
+                menuPrincipal.RefrescarListadoClientes();
+            }
+            else
+            {
+                // MODO STANDALONE (por si se usa fuera del menú)
+                FrmListadoClientes frm = (FrmListadoClientes)Application.OpenForms["FrmListadoCliente"];
 
                 if (frm != null)
                 {
@@ -144,39 +195,12 @@ namespace CapaPresentacion
                 }
                 else
                 {
-                    FrmListadoCliente nuevoFrm = new FrmListadoCliente();
+                    FrmListadoClientes nuevoFrm = new FrmListadoClientes();
                     nuevoFrm.Show();
                 }
 
                 this.Close();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message + "\n" + ex.StackTrace,
-                    "Sistema Veterinaria",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
-
-        }
-
-        // EVENTO CLICK DEL BOTÓN CANCELAR
-        private void btncancelar_Click(object sender, EventArgs e)
-        {
-            FrmListadoCliente frm = (FrmListadoCliente)Application.OpenForms["FrmListadoCliente"];
-
-            if (frm != null)
-            {
-                frm.Show();
-                frm.BringToFront();
-            }
-            else
-            {
-                FrmListadoCliente nuevoFrm = new FrmListadoCliente();
-                nuevoFrm.Show();
-            }
-
-            this.Close();
         }
     }
 }

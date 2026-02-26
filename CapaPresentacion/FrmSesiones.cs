@@ -25,6 +25,23 @@ namespace CapaPresentacion
 
             // Cargar sesiones
             CargarSesiones();
+
+            // Configurar apariencia del DataGridView
+            dgvSesiones.BorderStyle = BorderStyle.None;
+            dgvSesiones.BackgroundColor = Color.White;
+            dgvSesiones.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(52, 73, 94);
+            dgvSesiones.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dgvSesiones.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            dgvSesiones.DefaultCellStyle.Font = new Font("Segoe UI", 9F);
+            dgvSesiones.DefaultCellStyle.SelectionBackColor = Color.FromArgb(52, 152, 219);
+            dgvSesiones.EnableHeadersVisualStyles = false;
+
+            // Configurar fechas y cargar datos
+            dtpFechaInicio.Value = DateTime.Now.AddMonths(-1);
+            dtpFechaFin.Value = DateTime.Now;
+
+            CargarUsuarios();
+            CargarSesiones();
         }
 
         // MÉTODO PARA CARGAR USUARIOS EN EL COMBOBOX

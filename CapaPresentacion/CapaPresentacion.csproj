@@ -49,11 +49,29 @@
     <Compile Include="FrmAuditoria.Designer.cs">
       <DependentUpon>FrmAuditoria.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmListadoCliente.cs">
+    <Compile Include="FrmHistorialPrecios.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmListadoCliente.Designer.cs">
-      <DependentUpon>FrmListadoCliente.cs</DependentUpon>
+    <Compile Include="FrmHistorialPrecios.Designer.cs">
+      <DependentUpon>FrmHistorialPrecios.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmListadoClientes.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmListadoClientes.Designer.cs">
+      <DependentUpon>FrmListadoClientes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmListadoMascotas.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmListadoMascotas.Designer.cs">
+      <DependentUpon>FrmListadoMascotas.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmListadoProductos.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmListadoProductos.Designer.cs">
+      <DependentUpon>FrmListadoProductos.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmLogin.cs">
       <SubType>Form</SubType>
@@ -61,11 +79,29 @@
     <Compile Include="FrmLogin.Designer.cs">
       <DependentUpon>FrmLogin.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmMenuPrincipal.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmMenuPrincipal.Designer.cs">
+      <DependentUpon>FrmMenuPrincipal.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmRegistrarCliente.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FrmRegistrarCliente.Designer.cs">
       <DependentUpon>FrmRegistrarCliente.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmRegistrarMascota.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmRegistrarMascota.Designer.cs">
+      <DependentUpon>FrmRegistrarMascota.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmRegistrarProducto.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmRegistrarProducto.Designer.cs">
+      <DependentUpon>FrmRegistrarProducto.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmSesiones.cs">
       <SubType>Form</SubType>
@@ -89,14 +125,29 @@
     <EmbeddedResource Include="FrmAuditoria.resx">
       <DependentUpon>FrmAuditoria.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="FrmListadoCliente.resx">
-      <DependentUpon>FrmListadoCliente.cs</DependentUpon>
+    <EmbeddedResource Include="FrmListadoClientes.resx">
+      <DependentUpon>FrmListadoClientes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmListadoMascotas.resx">
+      <DependentUpon>FrmListadoMascotas.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmListadoProductos.resx">
+      <DependentUpon>FrmListadoProductos.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FrmLogin.resx">
       <DependentUpon>FrmLogin.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="FrmMenuPrincipal.resx">
+      <DependentUpon>FrmMenuPrincipal.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FrmRegistrarCliente.resx">
       <DependentUpon>FrmRegistrarCliente.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmRegistrarMascota.resx">
+      <DependentUpon>FrmRegistrarMascota.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmRegistrarProducto.resx">
+      <DependentUpon>FrmRegistrarProducto.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FrmSesiones.resx">
       <DependentUpon>FrmSesiones.cs</DependentUpon>

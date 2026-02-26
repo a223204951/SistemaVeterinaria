@@ -1,18 +1,13 @@
 ﻿using System;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace CapaPresentacion
 {
     partial class FrmRegistrarCliente
     {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -24,10 +19,6 @@ namespace CapaPresentacion
 
         #region Windows Form Designer generated code
 
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
             this.label1 = new System.Windows.Forms.Label();
@@ -43,120 +34,171 @@ namespace CapaPresentacion
             this.btncancelar = new System.Windows.Forms.Button();
             this.btnguardar = new System.Windows.Forms.Button();
             this.txtidcliente = new System.Windows.Forms.TextBox();
+            this.panelFormulario = new System.Windows.Forms.Panel();
+            this.panelFormulario.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(22, 19);
+            this.label1.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
+            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            this.label1.Location = new System.Drawing.Point(30, 30);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(313, 25);
+            this.label1.Size = new System.Drawing.Size(364, 37);
             this.label1.TabIndex = 0;
-            this.label1.Text = "REGISTRAR NUEVO CLIENTE";
+            this.label1.Text = "📝 Registrar Nuevo Cliente";
+            // 
+            // panelFormulario
+            // 
+            this.panelFormulario.BackColor = System.Drawing.Color.White;
+            this.panelFormulario.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panelFormulario.Controls.Add(this.label2);
+            this.panelFormulario.Controls.Add(this.txtnombre);
+            this.panelFormulario.Controls.Add(this.label5);
+            this.panelFormulario.Controls.Add(this.txtdireccion);
+            this.panelFormulario.Controls.Add(this.label6);
+            this.panelFormulario.Controls.Add(this.txttelefono);
+            this.panelFormulario.Controls.Add(this.label7);
+            this.panelFormulario.Controls.Add(this.rbtnactivo);
+            this.panelFormulario.Controls.Add(this.rbtninactivo);
+            this.panelFormulario.Location = new System.Drawing.Point(37, 90);
+            this.panelFormulario.Name = "panelFormulario";
+            this.panelFormulario.Size = new System.Drawing.Size(876, 350);
+            this.panelFormulario.TabIndex = 1;
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(22, 116);
+            this.label2.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            this.label2.Location = new System.Drawing.Point(30, 40);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(56, 16);
+            this.label2.Size = new System.Drawing.Size(159, 23);
             this.label2.TabIndex = 1;
-            this.label2.Text = "Nombre";
+            this.label2.Text = "Nombre completo:";
+            // 
+            // txtnombre
+            // 
+            this.txtnombre.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.txtnombre.Location = new System.Drawing.Point(34, 70);
+            this.txtnombre.Name = "txtnombre";
+            this.txtnombre.Size = new System.Drawing.Size(400, 30);
+            this.txtnombre.TabIndex = 7;
             // 
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(364, 116);
+            this.label5.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.label5.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            this.label5.Location = new System.Drawing.Point(460, 40);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(64, 16);
+            this.label5.Size = new System.Drawing.Size(90, 23);
             this.label5.TabIndex = 4;
-            this.label5.Text = "Dirección";
+            this.label5.Text = "Dirección:";
+            // 
+            // txtdireccion
+            // 
+            this.txtdireccion.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.txtdireccion.Location = new System.Drawing.Point(464, 70);
+            this.txtdireccion.Multiline = true;
+            this.txtdireccion.Name = "txtdireccion";
+            this.txtdireccion.Size = new System.Drawing.Size(380, 80);
+            this.txtdireccion.TabIndex = 10;
             // 
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(22, 198);
+            this.label6.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.label6.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            this.label6.Location = new System.Drawing.Point(30, 130);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(61, 16);
+            this.label6.Size = new System.Drawing.Size(82, 23);
             this.label6.TabIndex = 5;
-            this.label6.Text = "Teléfono";
+            this.label6.Text = "Teléfono:";
+            // 
+            // txttelefono
+            // 
+            this.txttelefono.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.txttelefono.Location = new System.Drawing.Point(34, 160);
+            this.txttelefono.Name = "txttelefono";
+            this.txttelefono.Size = new System.Drawing.Size(250, 30);
+            this.txttelefono.TabIndex = 11;
             // 
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(364, 198);
+            this.label7.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.label7.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            this.label7.Location = new System.Drawing.Point(30, 230);
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(50, 16);
+            this.label7.Size = new System.Drawing.Size(68, 23);
             this.label7.TabIndex = 6;
-            this.label7.Text = "Estado";
-            // 
-            // txtnombre
-            // 
-            this.txtnombre.Location = new System.Drawing.Point(25, 135);
-            this.txtnombre.Name = "txtnombre";
-            this.txtnombre.Size = new System.Drawing.Size(255, 22);
-            this.txtnombre.TabIndex = 7;
-            // 
-            // txtdireccion
-            // 
-            this.txtdireccion.Location = new System.Drawing.Point(367, 135);
-            this.txtdireccion.Name = "txtdireccion";
-            this.txtdireccion.Size = new System.Drawing.Size(258, 22);
-            this.txtdireccion.TabIndex = 10;
-            // 
-            // txttelefono
-            // 
-            this.txttelefono.Location = new System.Drawing.Point(25, 217);
-            this.txttelefono.Name = "txttelefono";
-            this.txttelefono.Size = new System.Drawing.Size(258, 22);
-            this.txttelefono.TabIndex = 11;
+            this.label7.Text = "Estado:";
             // 
             // rbtnactivo
             // 
             this.rbtnactivo.AutoSize = true;
-            this.rbtnactivo.Location = new System.Drawing.Point(367, 217);
+            this.rbtnactivo.Checked = true;
+            this.rbtnactivo.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.rbtnactivo.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.rbtnactivo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(204)))), ((int)(((byte)(113)))));
+            this.rbtnactivo.Location = new System.Drawing.Point(34, 265);
             this.rbtnactivo.Name = "rbtnactivo";
-            this.rbtnactivo.Size = new System.Drawing.Size(65, 20);
+            this.rbtnactivo.Size = new System.Drawing.Size(107, 27);
             this.rbtnactivo.TabIndex = 12;
             this.rbtnactivo.TabStop = true;
-            this.rbtnactivo.Text = "Activo";
+            this.rbtnactivo.Text = "✓ ACTIVO";
             this.rbtnactivo.UseVisualStyleBackColor = true;
             // 
             // rbtninactivo
             // 
             this.rbtninactivo.AutoSize = true;
-            this.rbtninactivo.Location = new System.Drawing.Point(491, 217);
+            this.rbtninactivo.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.rbtninactivo.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.rbtninactivo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            this.rbtninactivo.Location = new System.Drawing.Point(160, 265);
             this.rbtninactivo.Name = "rbtninactivo";
-            this.rbtninactivo.Size = new System.Drawing.Size(74, 20);
+            this.rbtninactivo.Size = new System.Drawing.Size(124, 27);
             this.rbtninactivo.TabIndex = 13;
-            this.rbtninactivo.TabStop = true;
-            this.rbtninactivo.Text = "Inactivo";
+            this.rbtninactivo.Text = "✗ INACTIVO";
             this.rbtninactivo.UseVisualStyleBackColor = true;
             // 
             // btncancelar
             // 
-            this.btncancelar.Location = new System.Drawing.Point(550, 308);
+            this.btncancelar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(149)))), ((int)(((byte)(165)))), ((int)(((byte)(166)))));
+            this.btncancelar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btncancelar.FlatAppearance.BorderSize = 0;
+            this.btncancelar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btncancelar.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btncancelar.ForeColor = System.Drawing.Color.White;
+            this.btncancelar.Location = new System.Drawing.Point(668, 470);
             this.btncancelar.Name = "btncancelar";
-            this.btncancelar.Size = new System.Drawing.Size(75, 23);
+            this.btncancelar.Size = new System.Drawing.Size(120, 45);
             this.btncancelar.TabIndex = 14;
-            this.btncancelar.Text = "&Cancelar";
-            this.btncancelar.UseVisualStyleBackColor = true;
+            this.btncancelar.Text = "✗ Cancelar";
+            this.btncancelar.UseVisualStyleBackColor = false;
             this.btncancelar.Click += new System.EventHandler(this.btncancelar_Click);
             // 
             // btnguardar
             // 
-            this.btnguardar.Location = new System.Drawing.Point(432, 308);
+            this.btnguardar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(204)))), ((int)(((byte)(113)))));
+            this.btnguardar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnguardar.FlatAppearance.BorderSize = 0;
+            this.btnguardar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnguardar.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnguardar.ForeColor = System.Drawing.Color.White;
+            this.btnguardar.Location = new System.Drawing.Point(793, 470);
             this.btnguardar.Name = "btnguardar";
-            this.btnguardar.Size = new System.Drawing.Size(75, 23);
+            this.btnguardar.Size = new System.Drawing.Size(120, 45);
             this.btnguardar.TabIndex = 15;
-            this.btnguardar.Text = "&Guardar";
-            this.btnguardar.UseVisualStyleBackColor = true;
+            this.btnguardar.Text = "💾 Guardar";
+            this.btnguardar.UseVisualStyleBackColor = false;
             this.btnguardar.Click += new System.EventHandler(this.btnguardar_Click);
             // 
             // txtidcliente
             // 
-            this.txtidcliente.Location = new System.Drawing.Point(27, 47);
+            this.txtidcliente.Location = new System.Drawing.Point(37, 40);
             this.txtidcliente.Name = "txtidcliente";
             this.txtidcliente.Size = new System.Drawing.Size(100, 22);
             this.txtidcliente.TabIndex = 16;
@@ -166,28 +208,21 @@ namespace CapaPresentacion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(699, 374);
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(236)))), ((int)(((byte)(240)))), ((int)(((byte)(241)))));
+            this.ClientSize = new System.Drawing.Size(950, 600);
             this.Controls.Add(this.txtidcliente);
             this.Controls.Add(this.btnguardar);
             this.Controls.Add(this.btncancelar);
-            this.Controls.Add(this.rbtninactivo);
-            this.Controls.Add(this.rbtnactivo);
-            this.Controls.Add(this.txttelefono);
-            this.Controls.Add(this.txtdireccion);
-            this.Controls.Add(this.txtnombre);
-            this.Controls.Add(this.label7);
-            this.Controls.Add(this.label6);
-            this.Controls.Add(this.label5);
-            this.Controls.Add(this.label2);
+            this.Controls.Add(this.panelFormulario);
             this.Controls.Add(this.label1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "FrmRegistrarCliente";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "FrmRegistrarCliente";
             this.Load += new System.EventHandler(this.FrmRegistrarCliente_Load);
+            this.panelFormulario.ResumeLayout(false);
+            this.panelFormulario.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         #endregion
@@ -199,6 +234,7 @@ namespace CapaPresentacion
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Button btncancelar;
         private System.Windows.Forms.Button btnguardar;
+        private System.Windows.Forms.Panel panelFormulario;
         public System.Windows.Forms.TextBox txtnombre;
         public System.Windows.Forms.TextBox txtdireccion;
         public System.Windows.Forms.TextBox txttelefono;

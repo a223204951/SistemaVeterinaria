@@ -33,6 +33,24 @@ namespace CapaPresentacion
 
             // Configurar apariencia del DataGridView
             ConfigurarDataGridView();
+
+            // Configurar apariencia del DataGridView
+            dgvAuditoria.BorderStyle = BorderStyle.None;
+            dgvAuditoria.BackgroundColor = Color.White;
+            dgvAuditoria.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(52, 73, 94);
+            dgvAuditoria.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dgvAuditoria.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            dgvAuditoria.DefaultCellStyle.Font = new Font("Segoe UI", 9F);
+            dgvAuditoria.DefaultCellStyle.SelectionBackColor = Color.FromArgb(52, 152, 219);
+            dgvAuditoria.EnableHeadersVisualStyles = false;
+
+            // Configurar fechas y cargar datos
+            dtpFechaInicio.Value = DateTime.Now.AddMonths(-1);
+            dtpFechaFin.Value = DateTime.Now;
+            cmbFiltroOperacion.SelectedIndex = 0;
+
+            CargarAuditoria();
+            ConfigurarDataGridView();
         }
 
         // MÉTODO PARA CARGAR LA AUDITORÍA

@@ -1,111 +1,145 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using CapaNegocio;
-using CapaDatos;
 
 namespace CapaPresentacion
 {
-    // USUARIO DE PRUEBA: admin
-    // CONTRASEÑA: 1234
     public partial class FrmLogin : Form
     {
-        // VARIABLES ESTÁTICAS PARA LA SESIÓN ACTUAL
         public static string UsuarioActual = "";
+        public static string RolActual = "";
         public static int IdSesionActual = 0;
 
         public FrmLogin()
         {
             InitializeComponent();
+            AgregarEfectosVisuales();
         }
 
-        // EVENTO LOAD DEL FORMULARIO
+        // =============================================
+        // EFECTOS VISUALES: foco en campos y hover en botones
+        // =============================================
+        private void AgregarEfectosVisuales()
+        {
+            // Highlight azul al enfocar campos
+            txtUsuario.Enter += (s, e) => { panelLineaUsuario.BackColor = Color.FromArgb(52, 152, 219); panelLineaUsuario.Height = 3; };
+            txtUsuario.Leave += (s, e) => { panelLineaUsuario.BackColor = Color.FromArgb(189, 195, 199); panelLineaUsuario.Height = 2; };
+
+            txtPass.Enter += (s, e) => { panelLineaPass.BackColor = Color.FromArgb(52, 152, 219); panelLineaPass.Height = 3; };
+            txtPass.Leave += (s, e) => { panelLineaPass.BackColor = Color.FromArgb(189, 195, 199); panelLineaPass.Height = 2; };
+
+            // Hover en botón Ingresar
+            btnIngresar.MouseEnter += (s, e) => btnIngresar.BackColor = Color.FromArgb(41, 128, 185);
+            btnIngresar.MouseLeave += (s, e) => btnIngresar.BackColor = Color.FromArgb(52, 152, 219);
+
+            // Hover en botón Salir
+            btnSalir.MouseEnter += (s, e) => btnSalir.BackColor = Color.FromArgb(192, 57, 43);
+            btnSalir.MouseLeave += (s, e) => btnSalir.BackColor = Color.FromArgb(231, 76, 60);
+
+            // Enter en txtPass también dispara el login
+            txtPass.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    btnIngresar_Click(s, e);
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
+            };
+
+            // Enter en txtUsuario pasa foco a contraseña
+            txtUsuario.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    txtPass.Focus();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
+            };
+        }
+
         private void FrmLogin_Load(object sender, EventArgs e)
         {
-            // Cerrar sesiones huérfanas al iniciar
-            try
-            {
-                CD_Sesion sesionDato = new CD_Sesion();
-            }
-            catch { }
+            UsuarioActual = "";
+            RolActual = "";
+            IdSesionActual = 0;
+            txtUsuario.Focus();
         }
 
-        // EVENTO CLICK DEL BOTÓN SALIR
         private void btnSalir_Click(object sender, EventArgs e)
         {
             Application.Exit();
         }
 
-        // EVENTO CLICK DEL BOTÓN INGRESAR
         private void btnIngresar_Click(object sender, EventArgs e)
         {
-            // Validar campos vacíos
             if (string.IsNullOrWhiteSpace(txtUsuario.Text))
             {
-                MessageBox.Show("Ingrese el nombre de usuario",
-                    "Sistema Veterinaria",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                MostrarError("Por favor, ingrese el nombre de usuario");
                 txtUsuario.Focus();
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(txtPass.Text))
             {
-                MessageBox.Show("Ingrese la contraseña",
-                    "Sistema Veterinaria",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                MostrarError("Por favor, ingrese la contraseña");
                 txtPass.Focus();
                 return;
             }
 
-            // Validar credenciales
-            CN_Usuario objNegocio = new CN_Usuario();
-            bool respuesta = objNegocio.ValidarUsuario(txtUsuario.Text, txtPass.Text);
-
-            if (respuesta)
+            try
             {
-                // GUARDAR USUARIO ACTUAL
-                UsuarioActual = txtUsuario.Text;
+                // Efecto visual: deshabilitar botón mientras valida
+                btnIngresar.Enabled = false;
+                btnIngresar.Text = "⏳  Verificando...";
 
-                // REGISTRAR INICIO DE SESIÓN
-                IdSesionActual = CN_Sesion.IniciarSesion(UsuarioActual);
+                CN_Usuario objNegocio = new CN_Usuario();
+                bool respuesta = objNegocio.ValidarUsuario(txtUsuario.Text, txtPass.Text);
 
-                // Abrir listado de clientes
-                this.Hide();
-                FrmListadoCliente menu = new FrmListadoCliente();
-                menu.Show();
-
-                // Al cerrar el menú, cerrar sesión y volver al login
-                menu.FormClosed += (s, args) =>
+                if (respuesta)
                 {
-                    // REGISTRAR CIERRE DE SESIÓN
-                    if (IdSesionActual > 0)
-                    {
-                        CN_Sesion.CerrarSesion(IdSesionActual);
-                        IdSesionActual = 0;
-                    }
-                    this.Close();
-                };
-            }
-            else
-            {
-                MessageBox.Show("Usuario o contraseña incorrectos",
-                    "Sistema Veterinaria",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    UsuarioActual = txtUsuario.Text;
+                    RolActual = objNegocio.ObtenerRol(UsuarioActual);
+                    IdSesionActual = CN_Sesion.IniciarSesion(UsuarioActual);
 
-                txtUsuario.Clear();
-                txtPass.Clear();
-                txtUsuario.Focus();
+                    this.Hide();
+                    FrmMenuPrincipal menuPrincipal = new FrmMenuPrincipal();
+                    menuPrincipal.Show();
+                    menuPrincipal.FormClosed += (s, args) => this.Close();
+                }
+                else
+                {
+                    // Resaltar líneas en rojo para indicar error
+                    panelLineaUsuario.BackColor = Color.FromArgb(231, 76, 60);
+                    panelLineaPass.BackColor = Color.FromArgb(231, 76, 60);
+
+                    MostrarError("❌ Usuario o contraseña incorrectos\n\nPor favor verifique sus credenciales.");
+                    txtUsuario.Clear();
+                    txtPass.Clear();
+                    txtUsuario.Focus();
+
+                    // Restaurar colores de línea
+                    panelLineaUsuario.BackColor = Color.FromArgb(189, 195, 199);
+                    panelLineaPass.BackColor = Color.FromArgb(189, 195, 199);
+
+                    btnIngresar.Enabled = true;
+                    btnIngresar.Text = "▶  Ingresar al sistema";
+                }
             }
+            catch (Exception ex)
+            {
+                btnIngresar.Enabled = true;
+                btnIngresar.Text = "▶  Ingresar al sistema";
+                MostrarError("Error al iniciar sesión: " + ex.Message);
+            }
+        }
+
+        private void MostrarError(string mensaje)
+        {
+            MessageBox.Show(mensaje, "Sistema Veterinaria",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 }
