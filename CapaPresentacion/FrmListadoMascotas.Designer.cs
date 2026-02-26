@@ -20,13 +20,12 @@ namespace CapaPresentacion
 
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
             this.label1 = new System.Windows.Forms.Label();
             this.panelBusqueda = new System.Windows.Forms.Panel();
             this.btnLimpiar = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
-            // *** CAMBIO: ComboBox → TextBox ***
             this.txtBuscarCliente = new System.Windows.Forms.TextBox();
             this.btnBuscarCliente = new System.Windows.Forms.Button();
             this.btnBuscarNombre = new System.Windows.Forms.Button();
@@ -42,28 +41,26 @@ namespace CapaPresentacion
             ((System.ComponentModel.ISupportInitialize)(this.dgvMascotas)).BeginInit();
             this.panelBotones.SuspendLayout();
             this.SuspendLayout();
-
-            // -------------------------------------------------------
+            // 
             // label1
-            // -------------------------------------------------------
+            // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
-            this.label1.ForeColor = System.Drawing.Color.FromArgb(52, 73, 94);
+            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
             this.label1.Location = new System.Drawing.Point(20, 20);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(311, 37);
+            this.label1.Size = new System.Drawing.Size(327, 37);
             this.label1.TabIndex = 0;
             this.label1.Text = "🐾 Gestión de Mascotas";
-
-            // -------------------------------------------------------
+            // 
             // panelBusqueda
-            // -------------------------------------------------------
+            // 
             this.panelBusqueda.BackColor = System.Drawing.Color.White;
             this.panelBusqueda.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panelBusqueda.Controls.Add(this.btnLimpiar);
             this.panelBusqueda.Controls.Add(this.label3);
-            this.panelBusqueda.Controls.Add(this.txtBuscarCliente);   // <-- TextBox nuevo
-            this.panelBusqueda.Controls.Add(this.btnBuscarCliente);   // <-- Botón buscar dueño
+            this.panelBusqueda.Controls.Add(this.txtBuscarCliente);
+            this.panelBusqueda.Controls.Add(this.btnBuscarCliente);
             this.panelBusqueda.Controls.Add(this.btnBuscarNombre);
             this.panelBusqueda.Controls.Add(this.txtBuscarNombre);
             this.panelBusqueda.Controls.Add(this.label2);
@@ -71,11 +68,10 @@ namespace CapaPresentacion
             this.panelBusqueda.Name = "panelBusqueda";
             this.panelBusqueda.Size = new System.Drawing.Size(896, 100);
             this.panelBusqueda.TabIndex = 1;
-
-            // -------------------------------------------------------
+            // 
             // btnLimpiar
-            // -------------------------------------------------------
-            this.btnLimpiar.BackColor = System.Drawing.Color.FromArgb(149, 165, 166);
+            // 
+            this.btnLimpiar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(149)))), ((int)(((byte)(165)))), ((int)(((byte)(166)))));
             this.btnLimpiar.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnLimpiar.FlatAppearance.BorderSize = 0;
             this.btnLimpiar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -88,33 +84,30 @@ namespace CapaPresentacion
             this.btnLimpiar.Text = "🔄 Limpiar";
             this.btnLimpiar.UseVisualStyleBackColor = false;
             this.btnLimpiar.Click += new System.EventHandler(this.btnLimpiar_Click);
-
-            // -------------------------------------------------------
-            // label3  (Buscar por dueño)
-            // -------------------------------------------------------
+            // 
+            // label3
+            // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.label3.ForeColor = System.Drawing.Color.FromArgb(52, 73, 94);
+            this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
             this.label3.Location = new System.Drawing.Point(430, 15);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(120, 20);
+            this.label3.Size = new System.Drawing.Size(136, 20);
             this.label3.TabIndex = 4;
             this.label3.Text = "Buscar por dueño:";
-
-            // -------------------------------------------------------
-            // txtBuscarCliente  *** NUEVO: SearchBar de dueño ***
-            // -------------------------------------------------------
+            // 
+            // txtBuscarCliente
+            // 
             this.txtBuscarCliente.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.txtBuscarCliente.Location = new System.Drawing.Point(434, 38);
             this.txtBuscarCliente.Name = "txtBuscarCliente";
             this.txtBuscarCliente.Size = new System.Drawing.Size(246, 30);
             this.txtBuscarCliente.TabIndex = 3;
             this.txtBuscarCliente.TextChanged += new System.EventHandler(this.txtBuscarCliente_TextChanged);
-
-            // -------------------------------------------------------
-            // btnBuscarCliente  *** NUEVO: Botón buscar por dueño ***
-            // -------------------------------------------------------
-            this.btnBuscarCliente.BackColor = System.Drawing.Color.FromArgb(52, 152, 219);
+            // 
+            // btnBuscarCliente
+            // 
+            this.btnBuscarCliente.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
             this.btnBuscarCliente.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnBuscarCliente.FlatAppearance.BorderSize = 0;
             this.btnBuscarCliente.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -127,11 +120,10 @@ namespace CapaPresentacion
             this.btnBuscarCliente.Text = "🔍 Buscar";
             this.btnBuscarCliente.UseVisualStyleBackColor = false;
             this.btnBuscarCliente.Click += new System.EventHandler(this.btnBuscarCliente_Click);
-
-            // -------------------------------------------------------
+            // 
             // btnBuscarNombre
-            // -------------------------------------------------------
-            this.btnBuscarNombre.BackColor = System.Drawing.Color.FromArgb(52, 152, 219);
+            // 
+            this.btnBuscarNombre.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
             this.btnBuscarNombre.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnBuscarNombre.FlatAppearance.BorderSize = 0;
             this.btnBuscarNombre.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -144,32 +136,29 @@ namespace CapaPresentacion
             this.btnBuscarNombre.Text = "🔍 Buscar";
             this.btnBuscarNombre.UseVisualStyleBackColor = false;
             this.btnBuscarNombre.Click += new System.EventHandler(this.btnBuscarNombre_Click);
-
-            // -------------------------------------------------------
+            // 
             // txtBuscarNombre
-            // -------------------------------------------------------
+            // 
             this.txtBuscarNombre.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.txtBuscarNombre.Location = new System.Drawing.Point(15, 38);
             this.txtBuscarNombre.Name = "txtBuscarNombre";
             this.txtBuscarNombre.Size = new System.Drawing.Size(294, 30);
             this.txtBuscarNombre.TabIndex = 1;
             this.txtBuscarNombre.TextChanged += new System.EventHandler(this.txtBuscarNombre_TextChanged);
-
-            // -------------------------------------------------------
+            // 
             // label2
-            // -------------------------------------------------------
+            // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.label2.ForeColor = System.Drawing.Color.FromArgb(52, 73, 94);
+            this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
             this.label2.Location = new System.Drawing.Point(11, 15);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(157, 20);
+            this.label2.Size = new System.Drawing.Size(147, 20);
             this.label2.TabIndex = 0;
             this.label2.Text = "Buscar por nombre:";
-
-            // -------------------------------------------------------
+            // 
             // dgvMascotas
-            // -------------------------------------------------------
+            // 
             this.dgvMascotas.AllowUserToAddRows = false;
             this.dgvMascotas.AllowUserToDeleteRows = false;
             this.dgvMascotas.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
@@ -177,26 +166,26 @@ namespace CapaPresentacion
             this.dgvMascotas.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgvMascotas.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
             this.dgvMascotas.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(52, 73, 94);
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.FromArgb(52, 73, 94);
-            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvMascotas.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            dataGridViewCellStyle5.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            dataGridViewCellStyle5.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            dataGridViewCellStyle5.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle5.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvMascotas.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle5;
             this.dgvMascotas.ColumnHeadersHeight = 40;
             this.dgvMascotas.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = System.Drawing.Color.White;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Segoe UI", 9F);
-            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.FromArgb(52, 73, 94);
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.FromArgb(52, 152, 219);
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvMascotas.DefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle6.BackColor = System.Drawing.Color.White;
+            dataGridViewCellStyle6.Font = new System.Drawing.Font("Segoe UI", 9F);
+            dataGridViewCellStyle6.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
+            dataGridViewCellStyle6.SelectionForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle6.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvMascotas.DefaultCellStyle = dataGridViewCellStyle6;
             this.dgvMascotas.EnableHeadersVisualStyles = false;
-            this.dgvMascotas.GridColor = System.Drawing.Color.FromArgb(231, 231, 231);
+            this.dgvMascotas.GridColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(231)))), ((int)(((byte)(231)))));
             this.dgvMascotas.Location = new System.Drawing.Point(27, 185);
             this.dgvMascotas.Name = "dgvMascotas";
             this.dgvMascotas.ReadOnly = true;
@@ -207,10 +196,9 @@ namespace CapaPresentacion
             this.dgvMascotas.Size = new System.Drawing.Size(896, 340);
             this.dgvMascotas.TabIndex = 2;
             this.dgvMascotas.DoubleClick += new System.EventHandler(this.dgvMascotas_DoubleClick);
-
-            // -------------------------------------------------------
+            // 
             // panelBotones
-            // -------------------------------------------------------
+            // 
             this.panelBotones.Controls.Add(this.lblTotal);
             this.panelBotones.Controls.Add(this.btneliminar);
             this.panelBotones.Controls.Add(this.btneditar);
@@ -219,23 +207,21 @@ namespace CapaPresentacion
             this.panelBotones.Name = "panelBotones";
             this.panelBotones.Size = new System.Drawing.Size(896, 50);
             this.panelBotones.TabIndex = 3;
-
-            // -------------------------------------------------------
+            // 
             // lblTotal
-            // -------------------------------------------------------
+            // 
             this.lblTotal.AutoSize = true;
             this.lblTotal.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.lblTotal.ForeColor = System.Drawing.Color.FromArgb(52, 73, 94);
+            this.lblTotal.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
             this.lblTotal.Location = new System.Drawing.Point(5, 15);
             this.lblTotal.Name = "lblTotal";
-            this.lblTotal.Size = new System.Drawing.Size(182, 23);
+            this.lblTotal.Size = new System.Drawing.Size(172, 23);
             this.lblTotal.TabIndex = 3;
             this.lblTotal.Text = "Total de mascotas: 0";
-
-            // -------------------------------------------------------
+            // 
             // btneliminar
-            // -------------------------------------------------------
-            this.btneliminar.BackColor = System.Drawing.Color.FromArgb(231, 76, 60);
+            // 
+            this.btneliminar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
             this.btneliminar.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btneliminar.FlatAppearance.BorderSize = 0;
             this.btneliminar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -248,11 +234,10 @@ namespace CapaPresentacion
             this.btneliminar.Text = "🗑️ Eliminar";
             this.btneliminar.UseVisualStyleBackColor = false;
             this.btneliminar.Click += new System.EventHandler(this.btneliminar_Click);
-
-            // -------------------------------------------------------
+            // 
             // btneditar
-            // -------------------------------------------------------
-            this.btneditar.BackColor = System.Drawing.Color.FromArgb(241, 196, 15);
+            // 
+            this.btneditar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(241)))), ((int)(((byte)(196)))), ((int)(((byte)(15)))));
             this.btneditar.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btneditar.FlatAppearance.BorderSize = 0;
             this.btneditar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -265,11 +250,10 @@ namespace CapaPresentacion
             this.btneditar.Text = "✏️ Editar";
             this.btneditar.UseVisualStyleBackColor = false;
             this.btneditar.Click += new System.EventHandler(this.btneditar_Click);
-
-            // -------------------------------------------------------
+            // 
             // btnnuevo
-            // -------------------------------------------------------
-            this.btnnuevo.BackColor = System.Drawing.Color.FromArgb(46, 204, 113);
+            // 
+            this.btnnuevo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(204)))), ((int)(((byte)(113)))));
             this.btnnuevo.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnnuevo.FlatAppearance.BorderSize = 0;
             this.btnnuevo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -282,13 +266,12 @@ namespace CapaPresentacion
             this.btnnuevo.Text = "➕ Nuevo";
             this.btnnuevo.UseVisualStyleBackColor = false;
             this.btnnuevo.Click += new System.EventHandler(this.btnnuevo_Click);
-
-            // -------------------------------------------------------
+            // 
             // FrmListadoMascotas
-            // -------------------------------------------------------
+            // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.FromArgb(236, 240, 241);
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(236)))), ((int)(((byte)(240)))), ((int)(((byte)(241)))));
             this.ClientSize = new System.Drawing.Size(950, 600);
             this.Controls.Add(this.panelBotones);
             this.Controls.Add(this.dgvMascotas);
@@ -305,6 +288,7 @@ namespace CapaPresentacion
             this.panelBotones.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
+
         }
 
         #endregion

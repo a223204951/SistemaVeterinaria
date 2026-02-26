@@ -211,7 +211,7 @@ namespace CapaPresentacion
             this.btneliminar.UseVisualStyleBackColor = false;
             this.btneliminar.Click += new System.EventHandler(this.btneliminar_Click);
             // 
-            // FrmListadoCliente
+            // FrmListadoClientes
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -224,7 +224,7 @@ namespace CapaPresentacion
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.label1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
-            this.Name = "FrmListadoCliente";
+            this.Name = "FrmListadoClientes";
             this.Text = "FrmListadoCliente";
             this.Load += new System.EventHandler(this.FrmListadoCliente_Load);
             this.panel1.ResumeLayout(false);
