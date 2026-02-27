@@ -7,6 +7,7 @@ namespace CapaNegocio
     /// <summary>
     /// CAPA DE NEGOCIO - GESTIÓN DE PRODUCTOS
     /// Incluye validaciones y lógica de negocio para el sistema de precios dinámicos
+    /// Ahora con categorías como tabla separada
     /// </summary>
     public class CN_Producto
     {
@@ -26,7 +27,7 @@ namespace CapaNegocio
         /// Incluye validaciones de negocio
         /// </summary>
         public static string Guardar(string nombre, string descripcion, decimal precio, int stock,
-                                     string estado, string categoria, bool esMedicamento, DateTime? fechaVencimiento)
+                                     string estado, int idcategoria, bool esMedicamento, DateTime? fechaVencimiento)
         {
             // =============================================
             // VALIDACIONES DE NEGOCIO
@@ -54,8 +55,8 @@ namespace CapaNegocio
                 return "El stock no puede exceder 999,999 unidades";
 
             // VALIDAR CATEGORÍA
-            if (string.IsNullOrWhiteSpace(categoria))
-                return "Debe seleccionar una categoría";
+            if (idcategoria <= 0)
+                return "Debe seleccionar una categoría válida";
 
             // VALIDAR FECHA DE VENCIMIENTO PARA MEDICAMENTOS
             if (esMedicamento)
@@ -77,7 +78,7 @@ namespace CapaNegocio
                 Precio = precio,
                 Stock = stock,
                 Estado = estado,
-                Categoria = categoria,
+                Idcategoria = idcategoria,
                 EsMedicamento = esMedicamento,
                 FechaVencimiento = fechaVencimiento
             };
@@ -89,7 +90,7 @@ namespace CapaNegocio
         /// MÉTODO PARA EDITAR UN PRODUCTO EXISTENTE
         /// </summary>
         public static string Editar(int idproducto, string nombre, string descripcion, decimal precio,
-                                   int stock, string estado, string categoria, bool esMedicamento, DateTime? fechaVencimiento)
+                                   int stock, string estado, int idcategoria, bool esMedicamento, DateTime? fechaVencimiento)
         {
             // VALIDACIONES
             if (idproducto <= 0)
@@ -104,8 +105,8 @@ namespace CapaNegocio
             if (stock < 0)
                 return "El stock no puede ser negativo";
 
-            if (string.IsNullOrWhiteSpace(categoria))
-                return "Debe seleccionar una categoría";
+            if (idcategoria <= 0)
+                return "Debe seleccionar una categoría válida";
 
             if (esMedicamento && !fechaVencimiento.HasValue)
                 return "Los medicamentos deben tener fecha de vencimiento";
@@ -119,7 +120,7 @@ namespace CapaNegocio
                 Precio = precio,
                 Stock = stock,
                 Estado = estado,
-                Categoria = categoria,
+                Idcategoria = idcategoria,
                 EsMedicamento = esMedicamento,
                 FechaVencimiento = fechaVencimiento
             };
@@ -158,10 +159,11 @@ namespace CapaNegocio
 
         /// <summary>
         /// MÉTODO PARA BUSCAR PRODUCTOS POR CATEGORÍA
+        /// Ahora usa el ID de categoría
         /// </summary>
-        public static DataTable BuscarCategoria(string categoria)
+        public static DataTable BuscarCategoria(int idcategoria)
         {
-            return objDato.BuscarCategoria(categoria);
+            return objDato.BuscarCategoria(idcategoria);
         }
 
         /// <summary>
@@ -203,33 +205,13 @@ namespace CapaNegocio
         }
 
         /// <summary>
-        /// MÉTODO PARA OBTENER LISTA DE CATEGORÍAS DISPONIBLES
-        /// </summary>
-        public static string[] ObtenerCategorias()
-        {
-            return new string[]
-            {
-                "Alimentos",
-                "Antiparasitarios",
-                "Vacunas",
-                "Medicamentos",
-                "Higiene",
-                "Accesorios",
-                "Juguetes",
-                "Suplementos",
-                "Camas y Transportadoras",
-                "Otros"
-            };
-        }
-
-        /// <summary>
-        /// MÉTODO PARA VALIDAR PRODUCTOS PRÓXIMOS A VENCER
+        /// MÉTODO PARA OBTENER PRODUCTOS PRÓXIMOS A VENCER
         /// Retorna productos que vencen en los próximos 30 días
         /// </summary>
         public static DataTable ObtenerProductosProximosVencer()
         {
             DataTable todos = objDato.Listar();
-            DataTable proximosVencer = todos.Clone(); // Clonar estructura
+            DataTable proximosVencer = todos.Clone();
 
             DateTime fechaLimite = DateTime.Now.AddDays(30);
 

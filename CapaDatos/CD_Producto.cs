@@ -6,10 +6,7 @@ namespace CapaDatos
 {
     /// <summary>
     /// CAPA DE DATOS - GESTIÓN DE PRODUCTOS
-    /// Incluye sistema de precios dinámicos:
-    /// - Sube 10% el producto vendido
-    /// - Baja 10% los productos no vendidos (mínimo $1)
-    /// - Compra múltiple: todos los productos suben 10%
+    /// Incluye sistema de precios dinámicos con categorías como tabla separada
     /// </summary>
     public class CD_Producto
     {
@@ -24,7 +21,7 @@ namespace CapaDatos
         public decimal PrecioMinimo { get; set; }
         public int Stock { get; set; }
         public string Estado { get; set; }
-        public string Categoria { get; set; }
+        public int Idcategoria { get; set; }
         public bool EsMedicamento { get; set; }
         public DateTime? FechaVencimiento { get; set; }
         public int TotalVendido { get; set; }
@@ -32,7 +29,7 @@ namespace CapaDatos
 
         /// <summary>
         /// MÉTODO PARA LISTAR TODOS LOS PRODUCTOS
-        /// Incluye alertas de stock y porcentaje de cambio de precio
+        /// Incluye información de categoría y alertas de stock
         /// </summary>
         public DataTable Listar()
         {
@@ -85,15 +82,14 @@ namespace CapaDatos
                 cmd.Parameters.AddWithValue("@precio", prod.Precio);
                 cmd.Parameters.AddWithValue("@stock", prod.Stock);
                 cmd.Parameters.AddWithValue("@estado", prod.Estado);
-                cmd.Parameters.AddWithValue("@categoria", prod.Categoria);
+                cmd.Parameters.AddWithValue("@idcategoria", prod.Idcategoria);
                 cmd.Parameters.AddWithValue("@es_medicamento", prod.EsMedicamento);
                 cmd.Parameters.AddWithValue("@fecha_vencimiento",
                     prod.FechaVencimiento.HasValue ? (object)prod.FechaVencimiento.Value : DBNull.Value);
 
-                // EJECUTAR Y OBTENER ID DEL PRODUCTO INSERTADO
-                object idproducto = cmd.ExecuteScalar();
-
-                resultado = idproducto != null ? "OK" : "No se pudo insertar el producto";
+                // EJECUTAR Y OBTENER RESULTADO
+                object res = cmd.ExecuteScalar();
+                resultado = res != null ? res.ToString() : "Error al insertar producto";
             }
             catch (Exception ex)
             {
@@ -132,13 +128,13 @@ namespace CapaDatos
                 cmd.Parameters.AddWithValue("@precio", prod.Precio);
                 cmd.Parameters.AddWithValue("@stock", prod.Stock);
                 cmd.Parameters.AddWithValue("@estado", prod.Estado);
-                cmd.Parameters.AddWithValue("@categoria", prod.Categoria);
+                cmd.Parameters.AddWithValue("@idcategoria", prod.Idcategoria);
                 cmd.Parameters.AddWithValue("@es_medicamento", prod.EsMedicamento);
                 cmd.Parameters.AddWithValue("@fecha_vencimiento",
                     prod.FechaVencimiento.HasValue ? (object)prod.FechaVencimiento.Value : DBNull.Value);
 
-                int filasAfectadas = cmd.ExecuteNonQuery();
-                resultado = filasAfectadas >= 1 ? "OK" : "No se pudo actualizar el producto";
+                object res = cmd.ExecuteScalar();
+                resultado = res != null ? res.ToString() : "Error al actualizar producto";
             }
             catch (Exception ex)
             {
@@ -172,8 +168,8 @@ namespace CapaDatos
 
                 cmd.Parameters.AddWithValue("@idproducto", prod.Idproducto);
 
-                int filasAfectadas = cmd.ExecuteNonQuery();
-                resultado = filasAfectadas >= 1 ? "OK" : "No se pudo eliminar el producto";
+                object res = cmd.ExecuteScalar();
+                resultado = res != null ? res.ToString() : "Error al eliminar producto";
             }
             catch (Exception ex)
             {
@@ -226,8 +222,9 @@ namespace CapaDatos
 
         /// <summary>
         /// MÉTODO PARA BUSCAR PRODUCTOS POR CATEGORÍA
+        /// Ahora usa el ID de categoría
         /// </summary>
-        public DataTable BuscarCategoria(string categoria)
+        public DataTable BuscarCategoria(int idcategoria)
         {
             DataTable resultado = new DataTable("Producto");
             SqlConnection conexion = new SqlConnection();
@@ -237,7 +234,7 @@ namespace CapaDatos
                 conexion.ConnectionString = CD_Conexion.Conn;
                 SqlCommand cmd = new SqlCommand("dbo.sp_buscar_producto_categoria", conexion);
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@categoria", categoria);
+                cmd.Parameters.AddWithValue("@idcategoria", idcategoria);
 
                 SqlDataAdapter sqlDat = new SqlDataAdapter(cmd);
                 sqlDat.Fill(resultado);
@@ -278,7 +275,6 @@ namespace CapaDatos
                 cmd.Parameters.AddWithValue("@idproducto_vendido", idproductoVendido);
                 cmd.Parameters.AddWithValue("@cantidad_vendida", cantidadVendida);
 
-                // EJECUTAR Y OBTENER RESULTADO
                 object res = cmd.ExecuteScalar();
                 resultado = res != null ? res.ToString() : "Error en el ajuste de precios";
             }
@@ -312,11 +308,10 @@ namespace CapaDatos
                 conexion.Open();
                 SqlCommand cmd = new SqlCommand("dbo.sp_ajustar_precios_compra_multiple", conexion);
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.CommandTimeout = 120; // Timeout extendido
+                cmd.CommandTimeout = 120;
 
                 cmd.Parameters.AddWithValue("@productos", idsProductos);
 
-                // EJECUTAR Y OBTENER RESULTADO
                 object res = cmd.ExecuteScalar();
                 resultado = res != null ? res.ToString() : "Error en el ajuste de precios";
             }

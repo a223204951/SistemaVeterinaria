@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
 using CapaNegocio;
@@ -8,7 +9,7 @@ namespace CapaPresentacion
     /// <summary>
     /// FORMULARIO PARA REGISTRAR Y EDITAR PRODUCTOS
     /// Permite agregar nuevos productos o modificar existentes
-    /// Incluye validaciones completas y manejo de precios dinámicos
+    /// ACTUALIZADO: Usa categorías desde la tabla categoria_producto
     /// </summary>
     public partial class FrmRegistrarProducto : Form
     {
@@ -17,6 +18,11 @@ namespace CapaPresentacion
         // =============================================
         public bool Insert = false;
         public bool Edit = false;
+
+        // =============================================
+        // PROPIEDAD PARA ESTABLECER LA CATEGORÍA SELECCIONADA AL EDITAR
+        // =============================================
+        public int IdCategoriaSeleccionada { get; set; }
 
         public FrmRegistrarProducto()
         {
@@ -43,6 +49,12 @@ namespace CapaPresentacion
             else if (Edit)
             {
                 lblTitulo.Text = "✏️ Editar Producto";
+
+                // SELECCIONAR LA CATEGORÍA
+                if (IdCategoriaSeleccionada > 0)
+                {
+                    cmbCategoria.SelectedValue = IdCategoriaSeleccionada;
+                }
             }
 
             // CONFIGURAR TOOLTIPS
@@ -51,12 +63,37 @@ namespace CapaPresentacion
 
         /// <summary>
         /// MÉTODO PARA CARGAR CATEGORÍAS
+        /// ACTUALIZADO: Carga desde la tabla categoria_producto
         /// </summary>
         private void CargarCategorias()
         {
-            string[] categorias = CN_Producto.ObtenerCategorias();
-            cmbCategoria.Items.Clear();
-            cmbCategoria.Items.AddRange(categorias);
+            try
+            {
+                DataTable categorias = CN_Categoria.ListarActivas();
+
+                if (categorias != null && categorias.Rows.Count > 0)
+                {
+                    cmbCategoria.DataSource = categorias;
+                    cmbCategoria.DisplayMember = "nombre";
+                    cmbCategoria.ValueMember = "idcategoria";
+                    cmbCategoria.SelectedIndex = -1;
+                }
+                else
+                {
+                    MessageBox.Show("⚠️ No hay categorías registradas en el sistema.\n\n" +
+                        "Por favor, registre al menos una categoría antes de agregar productos.",
+                        "Sistema Veterinaria",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar categorías: " + ex.Message,
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
 
         /// <summary>
@@ -139,7 +176,7 @@ namespace CapaPresentacion
                 string descripcion = txtDescripcion.Text.Trim();
                 decimal precio = nudPrecio.Value;
                 int stock = Convert.ToInt32(nudStock.Value);
-                string categoria = cmbCategoria.SelectedItem.ToString();
+                int idcategoria = Convert.ToInt32(cmbCategoria.SelectedValue);
                 bool esMedicamento = chkEsMedicamento.Checked;
                 DateTime? fechaVencimiento = esMedicamento && dtpVencimiento.Enabled ? dtpVencimiento.Value : (DateTime?)null;
                 string estado = rbtnActivo.Checked ? "ACTIVO" : "INACTIVO";
@@ -152,14 +189,15 @@ namespace CapaPresentacion
                     // INSERTAR NUEVO PRODUCTO
                     // =============================================
                     resultado = CN_Producto.Guardar(nombre, descripcion, precio, stock, estado,
-                                                   categoria, esMedicamento, fechaVencimiento);
+                                                   idcategoria, esMedicamento, fechaVencimiento);
 
                     if (resultado == "OK")
                     {
                         MessageBox.Show("✅ Producto registrado correctamente\n\n" +
                             $"Nombre: {nombre}\n" +
                             $"Precio inicial: ${precio:N2} MXN\n" +
-                            $"Stock: {stock} unidades\n\n" +
+                            $"Stock: {stock} unidades\n" +
+                            $"Categoría: {cmbCategoria.Text}\n\n" +
                             $"💡 El precio se ajustará automáticamente según las ventas",
                             "Sistema Veterinaria",
                             MessageBoxButtons.OK,
@@ -183,14 +221,15 @@ namespace CapaPresentacion
                     // =============================================
                     int idproducto = Convert.ToInt32(txtIdProducto.Text);
                     resultado = CN_Producto.Editar(idproducto, nombre, descripcion, precio, stock,
-                                                  estado, categoria, esMedicamento, fechaVencimiento);
+                                                  estado, idcategoria, esMedicamento, fechaVencimiento);
 
                     if (resultado == "OK")
                     {
                         MessageBox.Show("✅ Producto actualizado correctamente\n\n" +
                             $"Nombre: {nombre}\n" +
                             $"Precio actual: ${precio:N2} MXN\n" +
-                            $"Stock: {stock} unidades",
+                            $"Stock: {stock} unidades\n" +
+                            $"Categoría: {cmbCategoria.Text}",
                             "Sistema Veterinaria",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Information);
