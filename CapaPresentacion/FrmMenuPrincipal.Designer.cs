@@ -25,6 +25,7 @@
             this.panelLateral = new System.Windows.Forms.Panel();
             this.btnSalir = new System.Windows.Forms.Button();
             this.panelAdministracion = new System.Windows.Forms.Panel();
+            this.btnCategorias = new System.Windows.Forms.Button();
             this.btnSesiones = new System.Windows.Forms.Button();
             this.btnAuditoria = new System.Windows.Forms.Button();
             this.lblAdministracion = new System.Windows.Forms.Label();
@@ -150,14 +151,32 @@
             // 
             // panelAdministracion
             // 
+            this.panelAdministracion.Controls.Add(this.btnCategorias);
             this.panelAdministracion.Controls.Add(this.btnSesiones);
             this.panelAdministracion.Controls.Add(this.btnAuditoria);
             this.panelAdministracion.Controls.Add(this.lblAdministracion);
             this.panelAdministracion.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelAdministracion.Location = new System.Drawing.Point(0, 725);
             this.panelAdministracion.Name = "panelAdministracion";
-            this.panelAdministracion.Size = new System.Drawing.Size(229, 172);
+            this.panelAdministracion.Size = new System.Drawing.Size(229, 220);
             this.panelAdministracion.TabIndex = 3;
+            // 
+            // btnCategorias
+            // 
+            this.btnCategorias.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(142)))), ((int)(((byte)(68)))), ((int)(((byte)(173)))));
+            this.btnCategorias.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnCategorias.FlatAppearance.BorderSize = 0;
+            this.btnCategorias.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCategorias.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.btnCategorias.ForeColor = System.Drawing.Color.White;
+            this.btnCategorias.Location = new System.Drawing.Point(20, 160);
+            this.btnCategorias.Name = "btnCategorias";
+            this.btnCategorias.Size = new System.Drawing.Size(186, 45);
+            this.btnCategorias.TabIndex = 3;
+            this.btnCategorias.Text = "📂 Categorías";
+            this.btnCategorias.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnCategorias.UseVisualStyleBackColor = false;
+            this.btnCategorias.Click += new System.EventHandler(this.btnCategorias_Click);
             // 
             // btnSesiones
             // 
@@ -479,6 +498,7 @@
             this.Name = "FrmMenuPrincipal";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Menú Principal - Sistema Veterinaria";
+            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Load += new System.EventHandler(this.FrmMenuPrincipal_Load);
             this.panelSuperior.ResumeLayout(false);
             this.panelSuperior.PerformLayout();
@@ -495,7 +515,6 @@
             this.panelContenedor.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         #endregion
@@ -526,6 +545,7 @@
         private System.Windows.Forms.Label lblAdministracion;
         private System.Windows.Forms.Button btnAuditoria;
         private System.Windows.Forms.Button btnSesiones;
+        private System.Windows.Forms.Button btnCategorias;
         private System.Windows.Forms.Button btnSalir;
         private System.Windows.Forms.Panel panelContenedor;
         private System.Windows.Forms.Label lblBienvenida;
