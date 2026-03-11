@@ -4,364 +4,216 @@ using System.Data.SqlClient;
 
 namespace CapaDatos
 {
-    /// <summary>
-    /// CAPA DE DATOS - GESTIÓN DE PRODUCTOS
-    /// Incluye sistema de precios dinámicos con categorías como tabla separada
-    /// </summary>
     public class CD_Producto
     {
-        // =============================================
-        // PROPIEDADES DE LA CLASE PRODUCTO
-        // =============================================
         public int Idproducto { get; set; }
         public string Nombre { get; set; }
         public string Descripcion { get; set; }
         public decimal Precio { get; set; }
-        public decimal PrecioBase { get; set; }
-        public decimal PrecioMinimo { get; set; }
         public int Stock { get; set; }
         public string Estado { get; set; }
         public int Idcategoria { get; set; }
         public bool EsMedicamento { get; set; }
         public DateTime? FechaVencimiento { get; set; }
-        public int TotalVendido { get; set; }
         public string Buscar { get; set; }
 
-        /// <summary>
-        /// MÉTODO PARA LISTAR TODOS LOS PRODUCTOS
-        /// Incluye información de categoría y alertas de stock
-        /// </summary>
+        // ── Listar ───────────────────────────────────────────────────────────
+
         public DataTable Listar()
         {
-            DataTable resultado = new DataTable("Producto");
-            SqlConnection conexion = new SqlConnection();
-
-            try
+            DataTable dt = new DataTable("Producto");
+            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
             {
-                conexion.ConnectionString = CD_Conexion.Conn;
-                SqlCommand cmd = new SqlCommand("dbo.sp_list_producto", conexion);
+                SqlCommand cmd = new SqlCommand("dbo.sp_list_producto", con);
                 cmd.CommandType = CommandType.StoredProcedure;
-
-                SqlDataAdapter sqlDat = new SqlDataAdapter(cmd);
-                sqlDat.Fill(resultado);
+                new SqlDataAdapter(cmd).Fill(dt);
             }
-            catch (Exception ex)
-            {
-                resultado = null;
-                throw ex;
-            }
-            finally
-            {
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-
-            return resultado;
+            return dt;
         }
 
-        /// <summary>
-        /// MÉTODO PARA GUARDAR UN NUEVO PRODUCTO
-        /// </summary>
+        // ── Guardar ──────────────────────────────────────────────────────────
+
         public string Guardar(CD_Producto prod)
         {
-            string resultado = "";
-            SqlConnection conexion = new SqlConnection();
-
-            try
+            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
             {
-                conexion.ConnectionString = CD_Conexion.Conn;
-                conexion.Open();
-                SqlCommand cmd = new SqlCommand("dbo.sp_insert_producto", conexion);
-                cmd.CommandType = CommandType.StoredProcedure;
-
-                // AGREGAR PARÁMETROS
-                cmd.Parameters.AddWithValue("@nombre", prod.Nombre);
-                cmd.Parameters.AddWithValue("@descripcion", prod.Descripcion ?? "");
-                cmd.Parameters.AddWithValue("@precio", prod.Precio);
-                cmd.Parameters.AddWithValue("@stock", prod.Stock);
-                cmd.Parameters.AddWithValue("@estado", prod.Estado);
-                cmd.Parameters.AddWithValue("@idcategoria", prod.Idcategoria);
-                cmd.Parameters.AddWithValue("@es_medicamento", prod.EsMedicamento);
-                cmd.Parameters.AddWithValue("@fecha_vencimiento",
-                    prod.FechaVencimiento.HasValue ? (object)prod.FechaVencimiento.Value : DBNull.Value);
-
-                // EJECUTAR Y OBTENER RESULTADO
-                object res = cmd.ExecuteScalar();
-                resultado = res != null ? res.ToString() : "Error al insertar producto";
-            }
-            catch (Exception ex)
-            {
-                resultado = ex.Message;
-            }
-            finally
-            {
-                if (conexion.State == ConnectionState.Open)
+                try
                 {
-                    conexion.Close();
+                    con.Open();
+                    SqlCommand cmd = new SqlCommand("dbo.sp_insert_producto", con);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@nombre", prod.Nombre);
+                    cmd.Parameters.AddWithValue("@descripcion", prod.Descripcion);
+                    cmd.Parameters.AddWithValue("@precio", prod.Precio);
+                    cmd.Parameters.AddWithValue("@stock", prod.Stock);
+                    cmd.Parameters.AddWithValue("@estado", prod.Estado);
+                    cmd.Parameters.AddWithValue("@idcategoria", prod.Idcategoria);
+                    cmd.Parameters.AddWithValue("@es_medicamento", prod.EsMedicamento);
+                    cmd.Parameters.AddWithValue("@fecha_vencimiento",
+                        prod.FechaVencimiento.HasValue
+                            ? (object)prod.FechaVencimiento.Value
+                            : DBNull.Value);
+                    object res = cmd.ExecuteScalar();
+                    return res != null ? res.ToString() : "Error al guardar producto";
                 }
+                catch (Exception ex) { return ex.Message; }
             }
-
-            return resultado;
         }
 
-        /// <summary>
-        /// MÉTODO PARA EDITAR UN PRODUCTO EXISTENTE
-        /// </summary>
+        // ── Editar ───────────────────────────────────────────────────────────
+
         public string Editar(CD_Producto prod)
         {
-            string resultado = "";
-            SqlConnection conexion = new SqlConnection();
-
-            try
+            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
             {
-                conexion.ConnectionString = CD_Conexion.Conn;
-                conexion.Open();
-                SqlCommand cmd = new SqlCommand("dbo.sp_update_producto", conexion);
-                cmd.CommandType = CommandType.StoredProcedure;
-
-                // AGREGAR PARÁMETROS
-                cmd.Parameters.AddWithValue("@idproducto", prod.Idproducto);
-                cmd.Parameters.AddWithValue("@nombre", prod.Nombre);
-                cmd.Parameters.AddWithValue("@descripcion", prod.Descripcion ?? "");
-                cmd.Parameters.AddWithValue("@precio", prod.Precio);
-                cmd.Parameters.AddWithValue("@stock", prod.Stock);
-                cmd.Parameters.AddWithValue("@estado", prod.Estado);
-                cmd.Parameters.AddWithValue("@idcategoria", prod.Idcategoria);
-                cmd.Parameters.AddWithValue("@es_medicamento", prod.EsMedicamento);
-                cmd.Parameters.AddWithValue("@fecha_vencimiento",
-                    prod.FechaVencimiento.HasValue ? (object)prod.FechaVencimiento.Value : DBNull.Value);
-
-                object res = cmd.ExecuteScalar();
-                resultado = res != null ? res.ToString() : "Error al actualizar producto";
-            }
-            catch (Exception ex)
-            {
-                resultado = ex.Message;
-            }
-            finally
-            {
-                if (conexion.State == ConnectionState.Open)
+                try
                 {
-                    conexion.Close();
+                    con.Open();
+                    SqlCommand cmd = new SqlCommand("dbo.sp_update_producto", con);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idproducto", prod.Idproducto);
+                    cmd.Parameters.AddWithValue("@nombre", prod.Nombre);
+                    cmd.Parameters.AddWithValue("@descripcion", prod.Descripcion);
+                    cmd.Parameters.AddWithValue("@precio", prod.Precio);
+                    cmd.Parameters.AddWithValue("@stock", prod.Stock);
+                    cmd.Parameters.AddWithValue("@estado", prod.Estado);
+                    cmd.Parameters.AddWithValue("@idcategoria", prod.Idcategoria);
+                    cmd.Parameters.AddWithValue("@es_medicamento", prod.EsMedicamento);
+                    cmd.Parameters.AddWithValue("@fecha_vencimiento",
+                        prod.FechaVencimiento.HasValue
+                            ? (object)prod.FechaVencimiento.Value
+                            : DBNull.Value);
+                    object res = cmd.ExecuteScalar();
+                    return res != null ? res.ToString() : "Error al actualizar producto";
                 }
+                catch (Exception ex) { return ex.Message; }
             }
-
-            return resultado;
         }
 
-        /// <summary>
-        /// MÉTODO PARA ELIMINAR UN PRODUCTO (ELIMINACIÓN LÓGICA)
-        /// </summary>
+        // ── Eliminar REAL ─────────────────────────────────────────────────────
+        // Elimina el historial de precios (que SÍ existe) y luego el producto.
+        // NO intenta borrar detalle_venta porque esa tabla no existe en esta BD.
+
         public string Eliminar(CD_Producto prod)
         {
-            string resultado = "";
-            SqlConnection conexion = new SqlConnection();
-
-            try
+            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
             {
-                conexion.ConnectionString = CD_Conexion.Conn;
-                conexion.Open();
-                SqlCommand cmd = new SqlCommand("dbo.sp_delete_producto", conexion);
-                cmd.CommandType = CommandType.StoredProcedure;
-
-                cmd.Parameters.AddWithValue("@idproducto", prod.Idproducto);
-
-                object res = cmd.ExecuteScalar();
-                resultado = res != null ? res.ToString() : "Error al eliminar producto";
-            }
-            catch (Exception ex)
-            {
-                resultado = ex.Message;
-            }
-            finally
-            {
-                if (conexion.State == ConnectionState.Open)
+                try
                 {
-                    conexion.Close();
-                }
-            }
+                    con.Open();
+                    SqlTransaction tx = con.BeginTransaction();
+                    try
+                    {
+                        // 1. Eliminar historial de precios (tabla confirmada en el script SQL)
+                        SqlCommand c1 = new SqlCommand(
+                            "DELETE FROM historial_precios WHERE idproducto = @id", con, tx);
+                        c1.Parameters.AddWithValue("@id", prod.Idproducto);
+                        c1.ExecuteNonQuery();
 
-            return resultado;
+                        // 2. Eliminar el producto
+                        SqlCommand c2 = new SqlCommand(
+                            "DELETE FROM producto WHERE idproducto = @id", con, tx);
+                        c2.Parameters.AddWithValue("@id", prod.Idproducto);
+                        c2.ExecuteNonQuery();
+
+                        tx.Commit();
+                        return "OK";
+                    }
+                    catch { tx.Rollback(); throw; }
+                }
+                catch (Exception ex) { return ex.Message; }
+            }
         }
 
-        /// <summary>
-        /// MÉTODO PARA BUSCAR PRODUCTOS POR NOMBRE
-        /// </summary>
+        // ── Búsquedas ────────────────────────────────────────────────────────
+
         public DataTable BuscarNombre(CD_Producto prod)
         {
-            DataTable resultado = new DataTable("Producto");
-            SqlConnection conexion = new SqlConnection();
-
-            try
+            DataTable dt = new DataTable("Producto");
+            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
             {
-                conexion.ConnectionString = CD_Conexion.Conn;
-                SqlCommand cmd = new SqlCommand("dbo.sp_buscar_producto_nombre", conexion);
+                SqlCommand cmd = new SqlCommand("dbo.sp_buscar_producto_nombre", con);
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@buscar", prod.Buscar);
-
-                SqlDataAdapter sqlDat = new SqlDataAdapter(cmd);
-                sqlDat.Fill(resultado);
+                new SqlDataAdapter(cmd).Fill(dt);
             }
-            catch (Exception ex)
-            {
-                resultado = null;
-                throw ex;
-            }
-            finally
-            {
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-
-            return resultado;
+            return dt;
         }
 
-        /// <summary>
-        /// MÉTODO PARA BUSCAR PRODUCTOS POR CATEGORÍA
-        /// Ahora usa el ID de categoría
-        /// </summary>
         public DataTable BuscarCategoria(int idcategoria)
         {
-            DataTable resultado = new DataTable("Producto");
-            SqlConnection conexion = new SqlConnection();
-
-            try
+            DataTable dt = new DataTable("Producto");
+            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
             {
-                conexion.ConnectionString = CD_Conexion.Conn;
-                SqlCommand cmd = new SqlCommand("dbo.sp_buscar_producto_categoria", conexion);
+                SqlCommand cmd = new SqlCommand("dbo.sp_buscar_producto_categoria", con);
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@idcategoria", idcategoria);
-
-                SqlDataAdapter sqlDat = new SqlDataAdapter(cmd);
-                sqlDat.Fill(resultado);
+                new SqlDataAdapter(cmd).Fill(dt);
             }
-            catch (Exception ex)
-            {
-                resultado = null;
-                throw ex;
-            }
-            finally
-            {
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-
-            return resultado;
+            return dt;
         }
 
-        /// <summary>
-        /// MÉTODO PARA AJUSTAR PRECIOS DESPUÉS DE UNA VENTA
-        /// Implementa la lógica: producto vendido sube 10%, los demás bajan 10% (mín $1)
-        /// </summary>
+        // ── Precios dinámicos ────────────────────────────────────────────────
+
         public string AjustarPreciosVenta(int idproductoVendido, int cantidadVendida)
         {
-            string resultado = "";
-            SqlConnection conexion = new SqlConnection();
-
-            try
+            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
             {
-                conexion.ConnectionString = CD_Conexion.Conn;
-                conexion.Open();
-                SqlCommand cmd = new SqlCommand("dbo.sp_ajustar_precios_venta", conexion);
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.CommandTimeout = 120; // Timeout extendido por los cursores
-
-                cmd.Parameters.AddWithValue("@idproducto_vendido", idproductoVendido);
-                cmd.Parameters.AddWithValue("@cantidad_vendida", cantidadVendida);
-
-                object res = cmd.ExecuteScalar();
-                resultado = res != null ? res.ToString() : "Error en el ajuste de precios";
-            }
-            catch (Exception ex)
-            {
-                resultado = ex.Message;
-            }
-            finally
-            {
-                if (conexion.State == ConnectionState.Open)
+                try
                 {
-                    conexion.Close();
+                    con.Open();
+                    SqlCommand cmd = new SqlCommand("dbo.sp_ajustar_precios_venta", con);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idproducto_vendido", idproductoVendido);
+                    cmd.Parameters.AddWithValue("@cantidad_vendida", cantidadVendida);
+                    object res = cmd.ExecuteScalar();
+                    return res != null ? res.ToString() : "Error al ajustar precios";
                 }
+                catch (Exception ex) { return ex.Message; }
             }
-
-            return resultado;
         }
 
-        /// <summary>
-        /// MÉTODO PARA AJUSTAR PRECIOS EN COMPRA MÚLTIPLE
-        /// Todos los productos comprados suben 10%, los demás bajan 10%
-        /// </summary>
         public string AjustarPreciosCompraMultiple(string idsProductos)
         {
-            string resultado = "";
-            SqlConnection conexion = new SqlConnection();
-
-            try
+            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
             {
-                conexion.ConnectionString = CD_Conexion.Conn;
-                conexion.Open();
-                SqlCommand cmd = new SqlCommand("dbo.sp_ajustar_precios_compra_multiple", conexion);
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.CommandTimeout = 120;
-
-                cmd.Parameters.AddWithValue("@productos", idsProductos);
-
-                object res = cmd.ExecuteScalar();
-                resultado = res != null ? res.ToString() : "Error en el ajuste de precios";
-            }
-            catch (Exception ex)
-            {
-                resultado = ex.Message;
-            }
-            finally
-            {
-                if (conexion.State == ConnectionState.Open)
+                try
                 {
-                    conexion.Close();
+                    con.Open();
+                    SqlCommand cmd = new SqlCommand("dbo.sp_ajustar_precios_compra_multiple", con);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@productos", idsProductos);
+                    object res = cmd.ExecuteScalar();
+                    return res != null ? res.ToString() : "Error al ajustar precios";
                 }
+                catch (Exception ex) { return ex.Message; }
             }
-
-            return resultado;
         }
 
-        /// <summary>
-        /// MÉTODO PARA OBTENER EL HISTORIAL DE PRECIOS DE UN PRODUCTO
-        /// </summary>
         public DataTable ObtenerHistorialPrecios(int idproducto)
         {
-            DataTable resultado = new DataTable("HistorialPrecios");
-            SqlConnection conexion = new SqlConnection();
-
-            try
+            DataTable dt = new DataTable("HistorialPrecios");
+            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
             {
-                conexion.ConnectionString = CD_Conexion.Conn;
-                SqlCommand cmd = new SqlCommand("dbo.sp_historial_precios_producto", conexion);
+                SqlCommand cmd = new SqlCommand("dbo.sp_historial_precios_producto", con);
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@idproducto", idproducto);
+                new SqlDataAdapter(cmd).Fill(dt);
+            }
+            return dt;
+        }
 
-                SqlDataAdapter sqlDat = new SqlDataAdapter(cmd);
-                sqlDat.Fill(resultado);
-            }
-            catch (Exception ex)
+        public DataTable ObtenerProductosStockBajo()
+        {
+            DataTable dt = new DataTable("StockBajo");
+            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
             {
-                resultado = null;
-                throw ex;
+                SqlCommand cmd = new SqlCommand(
+                    "SELECT idproducto, nombre, stock FROM producto WHERE stock <= 10 AND estado='ACTIVO'", con);
+                cmd.CommandType = CommandType.Text;
+                new SqlDataAdapter(cmd).Fill(dt);
             }
-            finally
-            {
-                if (conexion.State == ConnectionState.Open)
-                {
-                    conexion.Close();
-                }
-            }
-
-            return resultado;
+            return dt;
         }
     }
 }

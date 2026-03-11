@@ -6,11 +6,19 @@ using CapaNegocio;
 
 namespace CapaPresentacion
 {
+    /// <summary>
+    /// FORMULARIO DE LISTADO DE PRODUCTOS
+    /// Muestra todos los productos con sistema de precios dinámicos
+    /// Control de permisos según el rol del usuario
+    /// ACTUALIZADO: Usa categorías desde la tabla categoria_producto
+    /// </summary>
     public partial class FrmListadoProductos : Form
     {
+        // =============================================
+        // INSTANCIA DE LA CAPA DE NEGOCIO PARA VERIFICAR PERMISOS
+        // =============================================
         private CN_Usuario cnUsuario = new CN_Usuario();
-
-        // Flag para evitar que SelectedIndexChanged dispare durante CargarCategorias()
+        // Flag para suprimir el evento SelectedIndexChanged durante la inicialización del ComboBox
         private bool _cargandoCategorias = false;
 
         public FrmListadoProductos()
@@ -18,46 +26,64 @@ namespace CapaPresentacion
             InitializeComponent();
         }
 
+        /// <summary>
+        /// EVENTO LOAD DEL FORMULARIO
+        /// Configura permisos y carga los datos iniciales
+        /// </summary>
         private void FrmListadoProductos_Load(object sender, EventArgs e)
         {
-            CargarCategorias();
+            // CARGAR TODAS LOS PRODUCTOS
             Mostrar();
+
+            // CONFIGURAR PERMISOS SEGÚN EL ROL
             ConfigurarPermisos();
+
+            // CARGAR CATEGORÍAS EN EL COMBOBOX
+            CargarCategorias();
+
+            // VERIFICAR ALERTAS
             VerificarAlertas();
         }
 
+        /// <summary>
+        /// MÉTODO PARA CONFIGURAR PERMISOS SEGÚN EL ROL
+        /// </summary>
         private void ConfigurarPermisos()
         {
             string rol = FrmLogin.RolActual;
-            bool esAdmin = (rol == "ADMINISTRADOR");
 
-            btnNuevo.Visible = esAdmin || TryPerm(rol, "crear");
-            btnEditar.Visible = esAdmin || TryPerm(rol, "editar");
-            btnEliminar.Visible = esAdmin || TryPerm(rol, "eliminar");
-            btnHistorialPrecios.Visible = esAdmin || rol == "CAJERO";
-        }
+            // OBTENER PERMISOS
+            bool puedeCrear = cnUsuario.PuedeCrear(rol, "Productos");
+            bool puedeEditar = cnUsuario.PuedeEditar(rol, "Productos");
+            bool puedeEliminar = cnUsuario.PuedeEliminar(rol, "Productos");
 
-        private bool TryPerm(string rol, string tipo)
-        {
-            try
+            // MOSTRAR U OCULTAR BOTONES
+            btnNuevo.Visible = puedeCrear;
+            btnEditar.Visible = puedeEditar;
+            btnEliminar.Visible = puedeEliminar;
+
+            // BOTONES ESPECIALES
+            // Solo ADMIN y CAJERO pueden ver historial de precios
+            btnHistorialPrecios.Visible = (rol == "ADMINISTRADOR" || rol == "CAJERO");
+
+            // SI NO TIENE PERMISOS DE EDICIÓN, HACER EL GRID DE SOLO LECTURA
+            if (!puedeEditar && !puedeEliminar)
             {
-                switch (tipo)
-                {
-                    case "crear": return cnUsuario.PuedeCrear(rol, "Productos");
-                    case "editar": return cnUsuario.PuedeEditar(rol, "Productos");
-                    case "eliminar": return cnUsuario.PuedeEliminar(rol, "Productos");
-                    default: return false;
-                }
+                dgvProductos.ReadOnly = true;
             }
-            catch { return false; }
         }
 
+        /// <summary>
+        /// MÉTODO PÚBLICO PARA MOSTRAR TODOS LOS PRODUCTOS
+        /// </summary>
         public void Mostrar()
         {
             try
             {
                 DataTable datos = CN_Producto.Listar();
-                dgvProductos.DataSource = datos;
+                datos.DefaultView.Sort = "idproducto ASC";
+                dgvProductos.DataSource = datos.DefaultView.ToTable();
+
                 ConfigurarColumnas();
                 AplicarColoresStock();
                 ActualizarContador();
@@ -65,288 +91,490 @@ namespace CapaPresentacion
             catch (Exception ex)
             {
                 MessageBox.Show("Error al cargar productos: " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
+        /// <summary>
+        /// MÉTODO PARA CONFIGURAR APARIENCIA DE COLUMNAS
+        /// </summary>
         private void ConfigurarColumnas()
         {
-            if (dgvProductos.Columns.Count == 0) return;
+            if (dgvProductos.Columns.Count > 0)
+            {
+                // OCULTAR COLUMNAS INNECESARIAS
+                if (dgvProductos.Columns.Contains("precio_base"))
+                    dgvProductos.Columns["precio_base"].Visible = false;
+                if (dgvProductos.Columns.Contains("precio_minimo"))
+                    dgvProductos.Columns["precio_minimo"].Visible = false;
+                if (dgvProductos.Columns.Contains("total_vendido"))
+                    dgvProductos.Columns["total_vendido"].Visible = false;
+                if (dgvProductos.Columns.Contains("fecha_ultimo_ajuste"))
+                    dgvProductos.Columns["fecha_ultimo_ajuste"].Visible = false;
+                if (dgvProductos.Columns.Contains("fecha_creacion"))
+                    dgvProductos.Columns["fecha_creacion"].Visible = false;
+                if (dgvProductos.Columns.Contains("idcategoria"))
+                    dgvProductos.Columns["idcategoria"].Visible = false;
 
-            foreach (string col in new[] { "precio_base", "precio_minimo", "total_vendido",
-                                           "fecha_ultimo_ajuste", "fecha_creacion", "idcategoria" })
-                if (dgvProductos.Columns.Contains(col))
-                    dgvProductos.Columns[col].Visible = false;
+                // RENOMBRAR ENCABEZADOS
+                if (dgvProductos.Columns.Contains("idproducto"))
+                    dgvProductos.Columns["idproducto"].HeaderText = "ID";
+                if (dgvProductos.Columns.Contains("nombre"))
+                    dgvProductos.Columns["nombre"].HeaderText = "Nombre";
+                if (dgvProductos.Columns.Contains("descripcion"))
+                    dgvProductos.Columns["descripcion"].HeaderText = "Descripción";
+                if (dgvProductos.Columns.Contains("precio"))
+                {
+                    dgvProductos.Columns["precio"].HeaderText = "Precio";
+                    dgvProductos.Columns["precio"].DefaultCellStyle.Format = "C2"; // Formato moneda
+                }
+                if (dgvProductos.Columns.Contains("stock"))
+                    dgvProductos.Columns["stock"].HeaderText = "Stock";
+                if (dgvProductos.Columns.Contains("estado"))
+                    dgvProductos.Columns["estado"].HeaderText = "Estado";
+                if (dgvProductos.Columns.Contains("categoria"))
+                    dgvProductos.Columns["categoria"].HeaderText = "Categoría";
+                if (dgvProductos.Columns.Contains("es_medicamento"))
+                    dgvProductos.Columns["es_medicamento"].HeaderText = "Medicamento";
+                if (dgvProductos.Columns.Contains("fecha_vencimiento"))
+                {
+                    dgvProductos.Columns["fecha_vencimiento"].HeaderText = "Vencimiento";
+                    dgvProductos.Columns["fecha_vencimiento"].DefaultCellStyle.Format = "dd/MM/yyyy";
+                }
+                if (dgvProductos.Columns.Contains("nivel_stock"))
+                    dgvProductos.Columns["nivel_stock"].HeaderText = "Nivel Stock";
+                if (dgvProductos.Columns.Contains("porcentaje_cambio"))
+                {
+                    dgvProductos.Columns["porcentaje_cambio"].HeaderText = "Cambio %";
+                    dgvProductos.Columns["porcentaje_cambio"].DefaultCellStyle.Format = "0.00'%'";
+                }
 
-            void Rename(string c, string h) { if (dgvProductos.Columns.Contains(c)) dgvProductos.Columns[c].HeaderText = h; }
-            void W(string c, int w) { if (dgvProductos.Columns.Contains(c)) dgvProductos.Columns[c].Width = w; }
-
-            Rename("idproducto", "ID");
-            Rename("nombre", "Nombre");
-            Rename("descripcion", "Descripción");
-            Rename("precio", "Precio");
-            Rename("stock", "Stock");
-            Rename("estado", "Estado");
-            Rename("categoria", "Categoría");
-            Rename("es_medicamento", "Medicamento");
-            Rename("fecha_vencimiento", "Vencimiento");
-            Rename("nivel_stock", "Nivel Stock");
-            Rename("porcentaje_cambio", "Cambio %");
-
-            if (dgvProductos.Columns.Contains("precio"))
-                dgvProductos.Columns["precio"].DefaultCellStyle.Format = "C2";
-            if (dgvProductos.Columns.Contains("fecha_vencimiento"))
-                dgvProductos.Columns["fecha_vencimiento"].DefaultCellStyle.Format = "dd/MM/yyyy";
-            if (dgvProductos.Columns.Contains("porcentaje_cambio"))
-                dgvProductos.Columns["porcentaje_cambio"].DefaultCellStyle.Format = "0.00'%'";
-
-            W("idproducto", 50); W("precio", 100);
-            W("stock", 70); W("estado", 90);
-            W("categoria", 120); W("nivel_stock", 120);
+                // AJUSTAR ANCHOS
+                dgvProductos.Columns["idproducto"].Width = 50;
+                dgvProductos.Columns["precio"].Width = 100;
+                dgvProductos.Columns["stock"].Width = 70;
+                dgvProductos.Columns["estado"].Width = 90;
+                dgvProductos.Columns["categoria"].Width = 120;
+                dgvProductos.Columns["es_medicamento"].Width = 100;
+                dgvProductos.Columns["nivel_stock"].Width = 120;
+            }
         }
 
+        /// <summary>
+        /// MÉTODO PARA APLICAR COLORES SEGÚN EL NIVEL DE STOCK
+        /// </summary>
         private void AplicarColoresStock()
         {
-            bool tieneNivel = dgvProductos.Columns.Contains("nivel_stock");
-            bool tieneCambio = dgvProductos.Columns.Contains("porcentaje_cambio");
-
             foreach (DataGridViewRow row in dgvProductos.Rows)
             {
-                if (tieneNivel && row.Cells["nivel_stock"].Value != null)
+                if (row.Cells["nivel_stock"].Value != null)
                 {
-                    switch (row.Cells["nivel_stock"].Value.ToString())
+                    string nivelStock = row.Cells["nivel_stock"].Value.ToString();
+
+                    switch (nivelStock)
                     {
                         case "SIN STOCK":
                             row.DefaultCellStyle.BackColor = Color.FromArgb(255, 230, 230);
-                            row.DefaultCellStyle.ForeColor = Color.FromArgb(192, 57, 43); break;
+                            row.DefaultCellStyle.ForeColor = Color.FromArgb(192, 57, 43);
+                            break;
                         case "STOCK BAJO":
                             row.DefaultCellStyle.BackColor = Color.FromArgb(255, 243, 224);
-                            row.DefaultCellStyle.ForeColor = Color.FromArgb(230, 126, 34); break;
+                            row.DefaultCellStyle.ForeColor = Color.FromArgb(230, 126, 34);
+                            break;
                         case "STOCK MEDIO":
                             row.DefaultCellStyle.BackColor = Color.FromArgb(255, 250, 205);
-                            row.DefaultCellStyle.ForeColor = Color.FromArgb(241, 196, 15); break;
+                            row.DefaultCellStyle.ForeColor = Color.FromArgb(241, 196, 15);
+                            break;
                         case "STOCK SUFICIENTE":
                             row.DefaultCellStyle.BackColor = Color.FromArgb(232, 248, 245);
-                            row.DefaultCellStyle.ForeColor = Color.FromArgb(22, 160, 133); break;
+                            row.DefaultCellStyle.ForeColor = Color.FromArgb(22, 160, 133);
+                            break;
                     }
                 }
-                if (tieneCambio && row.Cells["porcentaje_cambio"].Value != null)
+
+                // COLOREAR PORCENTAJE DE CAMBIO
+                if (row.Cells["porcentaje_cambio"].Value != null)
                 {
                     decimal cambio = Convert.ToDecimal(row.Cells["porcentaje_cambio"].Value);
-                    row.Cells["porcentaje_cambio"].Style.ForeColor = cambio > 0
-                        ? Color.FromArgb(46, 204, 113) : Color.FromArgb(231, 76, 60);
+
+                    if (cambio > 0)
+                        row.Cells["porcentaje_cambio"].Style.ForeColor = Color.FromArgb(46, 204, 113);
+                    else if (cambio < 0)
+                        row.Cells["porcentaje_cambio"].Style.ForeColor = Color.FromArgb(231, 76, 60);
                 }
             }
         }
 
+        /// <summary>
+        /// MÉTODO PARA ACTUALIZAR CONTADOR DE PRODUCTOS
+        /// </summary>
         private void ActualizarContador()
         {
-            int total = dgvProductos.Rows.Count, bajo = 0, sinStock = 0;
+            int total = dgvProductos.Rows.Count;
+            int stockBajo = 0;
+            int sinStock = 0;
 
-            if (dgvProductos.Columns.Contains("nivel_stock"))
-                foreach (DataGridViewRow row in dgvProductos.Rows)
-                    if (row.Cells["nivel_stock"].Value != null)
-                    {
-                        string n = row.Cells["nivel_stock"].Value.ToString();
-                        if (n == "STOCK BAJO") bajo++;
-                        if (n == "SIN STOCK") sinStock++;
-                    }
+            foreach (DataGridViewRow row in dgvProductos.Rows)
+            {
+                if (row.Cells["nivel_stock"].Value != null)
+                {
+                    string nivel = row.Cells["nivel_stock"].Value.ToString();
+                    if (nivel == "STOCK BAJO") stockBajo++;
+                    if (nivel == "SIN STOCK") sinStock++;
+                }
+            }
 
-            lblTotal.Text = $"Total: {total} productos | Stock bajo: {bajo} | Sin stock: {sinStock}";
+            lblTotal.Text = $"Total: {total} productos | Stock bajo: {stockBajo} | Sin stock: {sinStock}";
         }
 
+        /// <summary>
+        /// MÉTODO PARA CARGAR CATEGORÍAS EN EL COMBOBOX
+        /// ACTUALIZADO: Carga desde la tabla categoria_producto
+        /// </summary>
         private void CargarCategorias()
         {
             try
             {
-                _cargandoCategorias = true;
-
                 DataTable categorias = CN_Categoria.ListarActivas();
-                DataRow filaTodas = categorias.NewRow();
-                filaTodas["idcategoria"] = 0;
-                filaTodas["nombre"] = "-- Todas las categorías --";
-                categorias.Rows.InsertAt(filaTodas, 0);
 
-                cmbCategoria.DataSource = categorias;
+                // CREAR UNA COPIA Y AGREGAR "TODAS"
+                DataTable dt = categorias.Copy();
+                DataRow row = dt.NewRow();
+                row["idcategoria"] = 0;
+                row["nombre"] = "-- Todas las categorías --";
+                dt.Rows.InsertAt(row, 0);
+
+                // Desuscribir durante la carga para evitar disparar el evento con datos viejos
+                cmbCategoria.SelectedIndexChanged -= cmbCategoria_SelectedIndexChanged;
+                cmbCategoria.DataSource    = null;
+                cmbCategoria.DataSource    = dt;
                 cmbCategoria.DisplayMember = "nombre";
-                cmbCategoria.ValueMember = "idcategoria";
+                cmbCategoria.ValueMember   = "idcategoria";
                 cmbCategoria.SelectedIndex = 0;
+                // Volver a suscribir el evento
+                cmbCategoria.SelectedIndexChanged += cmbCategoria_SelectedIndexChanged;
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error al cargar categorías: " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                _cargandoCategorias = false;
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
+        /// <summary>
+        /// MÉTODO PARA VERIFICAR ALERTAS DE STOCK Y VENCIMIENTO
+        /// </summary>
         private void VerificarAlertas()
         {
-            DataTable bajo = CN_Producto.ObtenerProductosStockBajo();
-            lblAlertaStock.Visible = (bajo != null && bajo.Rows.Count > 0);
-            if (lblAlertaStock.Visible)
-                lblAlertaStock.Text = $"⚠️ {bajo.Rows.Count} producto(s) con stock bajo";
+            // VERIFICAR STOCK BAJO
+            DataTable stockBajo = CN_Producto.ObtenerProductosStockBajo();
+            if (stockBajo != null && stockBajo.Rows.Count > 0)
+            {
+                lblAlertaStock.Text = $"⚠️ {stockBajo.Rows.Count} producto(s) con stock bajo";
+                lblAlertaStock.ForeColor = Color.FromArgb(230, 126, 34);
+                lblAlertaStock.Visible = true;
+            }
+            else
+            {
+                lblAlertaStock.Visible = false;
+            }
 
-            DataTable vencer = CN_Producto.ObtenerProductosProximosVencer();
-            lblAlertaVencimiento.Visible = (vencer != null && vencer.Rows.Count > 0);
-            if (lblAlertaVencimiento.Visible)
-                lblAlertaVencimiento.Text = $"⚠️ {vencer.Rows.Count} producto(s) próximo(s) a vencer";
+            // VERIFICAR PRODUCTOS PRÓXIMOS A VENCER
+            DataTable proximosVencer = CN_Producto.ObtenerProductosProximosVencer();
+            if (proximosVencer != null && proximosVencer.Rows.Count > 0)
+            {
+                lblAlertaVencimiento.Text = $"⚠️ {proximosVencer.Rows.Count} producto(s) próximo(s) a vencer";
+                lblAlertaVencimiento.ForeColor = Color.FromArgb(231, 76, 60);
+                lblAlertaVencimiento.Visible = true;
+            }
+            else
+            {
+                lblAlertaVencimiento.Visible = false;
+            }
         }
 
-        // ── BÚSQUEDA ───────────────────────────────────────────────────────────
+        // =============================================
+        // EVENTOS DE BÚSQUEDA
+        // =============================================
 
+        /// <summary>
+        /// EVENTO TEXTCHANGED PARA BÚSQUEDA EN TIEMPO REAL
+        /// </summary>
         private void txtBuscar_TextChanged(object sender, EventArgs e)
+        {
+            BuscarProducto();
+        }
+
+        /// <summary>
+        /// MÉTODO PARA BUSCAR PRODUCTOS
+        /// </summary>
+        private void BuscarProducto()
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(txtBuscar.Text))
+                {
                     Mostrar();
+                }
                 else
                 {
-                    dgvProductos.DataSource = CN_Producto.BuscarNombre(txtBuscar.Text);
-                    ConfigurarColumnas(); AplicarColoresStock(); ActualizarContador();
+                    DataTable datos = CN_Producto.BuscarNombre(txtBuscar.Text);
+                    dgvProductos.DataSource = datos;
+                    ConfigurarColumnas();
+                    AplicarColoresStock();
+                    ActualizarContador();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error en búsqueda: " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error en la búsqueda: " + ex.Message,
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
+        /// <summary>
+        /// EVENTO SELECTEDINDEXCHANGED DEL COMBOBOX DE CATEGORÍAS
+        /// ACTUALIZADO: Usa el ID de categoría
+        /// </summary>
         private void cmbCategoria_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // No disparar durante la carga inicial del ComboBox
+            // Ignorar el evento durante la inicialización del ComboBox
             if (_cargandoCategorias) return;
-            if (cmbCategoria.SelectedItem == null) return;
+            if (cmbCategoria.SelectedIndex < 0) return;
 
             try
             {
-                // *** FIX DEFINITIVO: cuando DataSource es DataTable, SelectedValue devuelve
-                //     DataRowView aunque ValueMember esté configurado. Leer siempre desde
-                //     SelectedItem casteado a DataRowView para obtener el valor seguro. ***
-                DataRowView drv = (DataRowView)cmbCategoria.SelectedItem;
+                // *** FIX DataRowView: con DataSource=DataTable siempre usar SelectedItem ***
+                DataRowView drv = cmbCategoria.SelectedItem as DataRowView;
+                if (drv == null) return;
                 int idcategoria = Convert.ToInt32(drv["idcategoria"]);
 
                 if (idcategoria == 0)
+                {
                     Mostrar();
+                }
                 else
                 {
-                    dgvProductos.DataSource = CN_Producto.BuscarCategoria(idcategoria);
-                    ConfigurarColumnas(); AplicarColoresStock(); ActualizarContador();
+                    DataTable datos = CN_Producto.BuscarCategoria(idcategoria);
+                    dgvProductos.DataSource = datos;
+                    ConfigurarColumnas();
+                    AplicarColoresStock();
+                    ActualizarContador();
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error al filtrar: " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
+        /// <summary>
+        /// EVENTO CLICK DEL BOTÓN LIMPIAR
+        /// </summary>
         private void btnLimpiar_Click(object sender, EventArgs e)
         {
             txtBuscar.Clear();
-            _cargandoCategorias = true;
             cmbCategoria.SelectedIndex = 0;
-            _cargandoCategorias = false;
             Mostrar();
         }
 
-        // ── CRUD ───────────────────────────────────────────────────────────────
+        // =============================================
+        // EVENTOS DE BOTONES CRUD
+        // =============================================
 
+        /// <summary>
+        /// EVENTO CLICK DEL BOTÓN NUEVO
+        /// </summary>
         private void btnNuevo_Click(object sender, EventArgs e)
         {
+            if (!cnUsuario.PuedeCrear(FrmLogin.RolActual, "Productos"))
+            {
+                MessageBox.Show("No tiene permisos para agregar productos",
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
             FrmRegistrarProducto form = new FrmRegistrarProducto();
             form.Insert = true;
-            if (form.ShowDialog() == DialogResult.OK) { Mostrar(); VerificarAlertas(); }
+
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                Mostrar();
+                VerificarAlertas();
+            }
         }
 
+        /// <summary>
+        /// EVENTO CLICK DEL BOTÓN EDITAR
+        /// </summary>
         private void btnEditar_Click(object sender, EventArgs e)
         {
-            if (dgvProductos.SelectedRows.Count == 0)
+            if (!cnUsuario.PuedeEditar(FrmLogin.RolActual, "Productos"))
+            {
+                MessageBox.Show("No tiene permisos para editar productos",
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (dgvProductos.SelectedRows.Count > 0)
+            {
+                FrmRegistrarProducto form = new FrmRegistrarProducto();
+                form.Edit = true;
+
+                // CARGAR DATOS DEL PRODUCTO SELECCIONADO
+                form.txtIdProducto.Text = dgvProductos.CurrentRow.Cells["idproducto"].Value.ToString();
+                form.txtNombre.Text = dgvProductos.CurrentRow.Cells["nombre"].Value.ToString();
+                form.txtDescripcion.Text = dgvProductos.CurrentRow.Cells["descripcion"].Value.ToString();
+                form.nudPrecio.Value = Convert.ToDecimal(dgvProductos.CurrentRow.Cells["precio"].Value);
+                form.nudStock.Value = Convert.ToDecimal(dgvProductos.CurrentRow.Cells["stock"].Value);
+
+                // SELECCIONAR CATEGORÍA POR ID
+                int idcategoria = Convert.ToInt32(dgvProductos.CurrentRow.Cells["idcategoria"].Value);
+                form.IdCategoriaSeleccionada = idcategoria;
+
+                form.chkEsMedicamento.Checked = Convert.ToBoolean(dgvProductos.CurrentRow.Cells["es_medicamento"].Value);
+
+                // CONFIGURAR ESTADO
+                string estado = dgvProductos.CurrentRow.Cells["estado"].Value.ToString();
+                if (estado == "ACTIVO")
+                    form.rbtnActivo.Checked = true;
+                else
+                    form.rbtnInactivo.Checked = true;
+
+                // CONFIGURAR FECHA DE VENCIMIENTO
+                if (dgvProductos.CurrentRow.Cells["fecha_vencimiento"].Value != DBNull.Value)
+                {
+                    form.dtpVencimiento.Value = Convert.ToDateTime(dgvProductos.CurrentRow.Cells["fecha_vencimiento"].Value);
+                    form.dtpVencimiento.Enabled = true;
+                }
+
+                if (form.ShowDialog() == DialogResult.OK)
+                {
+                    Mostrar();
+                    VerificarAlertas();
+                }
+            }
+            else
             {
                 MessageBox.Show("Seleccione un producto para editar",
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
             }
-
-            FrmRegistrarProducto form = new FrmRegistrarProducto();
-            form.Edit = true;
-            DataGridViewRow row = dgvProductos.CurrentRow;
-
-            form.txtIdProducto.Text = row.Cells["idproducto"].Value.ToString();
-            form.txtNombre.Text = row.Cells["nombre"].Value.ToString();
-            form.txtDescripcion.Text = row.Cells["descripcion"].Value.ToString();
-            form.nudPrecio.Value = Convert.ToDecimal(row.Cells["precio"].Value);
-            form.nudStock.Value = Convert.ToDecimal(row.Cells["stock"].Value);
-            form.IdCategoriaSeleccionada = Convert.ToInt32(row.Cells["idcategoria"].Value);
-            form.chkEsMedicamento.Checked = Convert.ToBoolean(row.Cells["es_medicamento"].Value);
-
-            if (row.Cells["estado"].Value.ToString() == "ACTIVO")
-                form.rbtnActivo.Checked = true;
-            else
-                form.rbtnInactivo.Checked = true;
-
-            if (row.Cells["fecha_vencimiento"].Value != DBNull.Value)
-            {
-                form.dtpVencimiento.Value = Convert.ToDateTime(row.Cells["fecha_vencimiento"].Value);
-                form.dtpVencimiento.Enabled = true;
-            }
-
-            if (form.ShowDialog() == DialogResult.OK) { Mostrar(); VerificarAlertas(); }
         }
 
+        /// <summary>
+        /// EVENTO CLICK DEL BOTÓN ELIMINAR
+        /// </summary>
         private void btnEliminar_Click(object sender, EventArgs e)
         {
-            if (dgvProductos.SelectedRows.Count == 0)
+            if (!cnUsuario.PuedeEliminar(FrmLogin.RolActual, "Productos"))
+            {
+                MessageBox.Show("No tiene permisos para eliminar productos",
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (dgvProductos.SelectedRows.Count > 0)
+            {
+                string nombreProducto = dgvProductos.CurrentRow.Cells["nombre"].Value.ToString();
+
+                DialogResult opcion = MessageBox.Show(
+                    $"¿Eliminar permanentemente el producto?\n\n" +
+                    $"Producto: {nombreProducto}\n\n" +
+                    $"⚠️ Esta acción no se puede deshacer.",
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (opcion == DialogResult.Yes)
+                {
+                    try
+                    {
+                        int idproducto = Convert.ToInt32(dgvProductos.CurrentRow.Cells["idproducto"].Value);
+                        string resultado = CN_Producto.Eliminar(idproducto);
+
+                        if (resultado == "OK")
+                        {
+                            MessageBox.Show("✅ Producto eliminado correctamente",
+                                "Sistema Veterinaria",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information);
+                            Mostrar();
+                            VerificarAlertas();
+                        }
+                        else
+                        {
+                            MessageBox.Show(resultado,
+                                "Sistema Veterinaria",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error al eliminar: " + ex.Message,
+                            "Sistema Veterinaria",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                    }
+                }
+            }
+            else
             {
                 MessageBox.Show("Seleccione un producto para eliminar",
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            string nombre = dgvProductos.CurrentRow.Cells["nombre"].Value.ToString();
-            if (MessageBox.Show($"¿Dar de baja '{nombre}'?\nSerá marcado como INACTIVO.",
-                "Sistema Veterinaria", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                try
-                {
-                    int id = Convert.ToInt32(dgvProductos.CurrentRow.Cells["idproducto"].Value);
-                    string res = CN_Producto.Eliminar(id);
-                    if (res == "OK")
-                    {
-                        MessageBox.Show("✅ Producto dado de baja correctamente",
-                            "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        Mostrar(); VerificarAlertas();
-                    }
-                    else
-                        MessageBox.Show(res, "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error: " + ex.Message,
-                        "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
             }
         }
 
+        /// <summary>
+        /// EVENTO CLICK DEL BOTÓN HISTORIAL DE PRECIOS
+        /// </summary>
         private void btnHistorialPrecios_Click(object sender, EventArgs e)
         {
-            if (dgvProductos.SelectedRows.Count == 0)
+            if (dgvProductos.SelectedRows.Count > 0)
+            {
+                int idproducto = Convert.ToInt32(dgvProductos.CurrentRow.Cells["idproducto"].Value);
+                string nombreProducto = dgvProductos.CurrentRow.Cells["nombre"].Value.ToString();
+
+                FrmHistorialPrecios form = new FrmHistorialPrecios(idproducto, nombreProducto);
+                form.ShowDialog();
+            }
+            else
             {
                 MessageBox.Show("Seleccione un producto para ver su historial",
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                    "Sistema Veterinaria",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
             }
-            int id = Convert.ToInt32(dgvProductos.CurrentRow.Cells["idproducto"].Value);
-            string nombre = dgvProductos.CurrentRow.Cells["nombre"].Value.ToString();
-            new FrmHistorialPrecios(id, nombre).ShowDialog();
         }
 
+        /// <summary>
+        /// EVENTO DOUBLECLICK EN EL DATAGRIDVIEW
+        /// </summary>
         private void dgvProductos_DoubleClick(object sender, EventArgs e)
-            => btnEditar_Click(sender, e);
+        {
+            if (cnUsuario.PuedeEditar(FrmLogin.RolActual, "Productos"))
+            {
+                btnEditar_Click(sender, e);
+            }
+        }
     }
 }

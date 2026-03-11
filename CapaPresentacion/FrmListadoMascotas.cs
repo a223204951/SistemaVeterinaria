@@ -197,8 +197,7 @@ namespace CapaPresentacion
             string cliente = dgvMascotas.CurrentRow.Cells["cliente"].Value.ToString();
 
             if (MessageBox.Show(
-                    $"¿Dar de baja a la mascota?\n\nMascota: {nombre}\nDueño: {cliente}\n\n" +
-                    $"Será marcada como INACTIVA.",
+                    $"¿Dar de baja a la mascota?\n\nMascota: {nombre}\nDueño: {cliente}\n\n",
                     "Sistema Veterinaria", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
                 == DialogResult.Yes)
             {

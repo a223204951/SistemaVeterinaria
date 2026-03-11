@@ -47,11 +47,13 @@
     <Compile Include="CD_Auditoria.cs" />
     <Compile Include="CD_Categoria.cs" />
     <Compile Include="CD_Cliente.cs" />
+    <Compile Include="CD_Compra.cs" />
     <Compile Include="CD_Mascota.cs" />
     <Compile Include="CD_Producto.cs" />
     <Compile Include="CD_Sesion.cs" />
     <Compile Include="CD_Usuario.cs" />
     <Compile Include="CD_Conexion.cs" />
+    <Compile Include="CD_Venta.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

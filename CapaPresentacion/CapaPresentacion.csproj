@@ -49,6 +49,12 @@
     <Compile Include="FrmAuditoria.Designer.cs">
       <DependentUpon>FrmAuditoria.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmCompras.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmCompras.Designer.cs">
+      <DependentUpon>FrmCompras.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmGestionCategorias.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -60,6 +66,12 @@
     </Compile>
     <Compile Include="FrmHistorialPrecios.Designer.cs">
       <DependentUpon>FrmHistorialPrecios.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmHistorialVentas.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmHistorialVentas.Designer.cs">
+      <DependentUpon>FrmHistorialVentas.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmListadoClientes.cs">
       <SubType>Form</SubType>
@@ -120,6 +132,12 @@
     </Compile>
     <Compile Include="FrmSesiones.Designer.cs">
       <DependentUpon>FrmSesiones.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmVentas.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmVentas.Designer.cs">
+      <DependentUpon>FrmVentas.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Data;
-using System.Drawing;
 using System.Windows.Forms;
 using CapaNegocio;
 
@@ -13,7 +12,6 @@ namespace CapaPresentacion
             InitializeComponent();
         }
 
-        // EVENTO LOAD DEL FORMULARIO
         private void FrmListadoCliente_Load(object sender, EventArgs e)
         {
             this.Top = 0;
@@ -21,130 +19,124 @@ namespace CapaPresentacion
             Mostrar();
         }
 
-        // MÉTODO PARA MOSTRAR TODOS LOS CLIENTES
         public void Mostrar()
         {
             this.dlistado.DataSource = CN_Cliente.Listar();
+            ActualizarContador();
         }
 
-        // MÉTODO PARA BUSCAR CLIENTES POR NOMBRE
-        private void BuscarNombre()
+        private void ActualizarContador()
         {
-            this.dlistado.DataSource = CN_Cliente.BuscarNombre(txtbuscar.Text);
+            lblTotal.Text = $"Total de clientes: {dlistado.Rows.Count}";
         }
 
-        // MÉTODO PARA BUSCAR CLIENTES POR ID
-        private void BuscarId()
-        {
-            this.dlistado.DataSource = CN_Cliente.BuscarId(txtbuscar.Text);
-        }
+        private void BuscarNombre() => dlistado.DataSource = CN_Cliente.BuscarNombre(txtbuscar.Text);
+        private void BuscarId() => dlistado.DataSource = CN_Cliente.BuscarId(txtbuscar.Text);
 
-        // *** BUG 1 CORREGIDO: BÚSQUEDA EN TIEMPO REAL (igual que FrmListadoMascotas) ***
-        // Conectar en el Designer: txtbuscar.TextChanged += txtbuscar_TextChanged
-        private void txtbuscar_TextChanged(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtbuscar.Text))
-            {
-                Mostrar();
-                return;
-            }
-
-            if (rbtnnombre.Checked)
-                BuscarNombre();
-            else if (rbtnidcliente.Checked)
-                BuscarId();
-        }
-
-        // EVENTO CLICK DEL BOTÓN BUSCAR (disparo manual, mantiene compatibilidad)
         private void btnbuscar_Click(object sender, EventArgs e)
         {
-            if (rbtnnombre.Checked)
-                BuscarNombre();
-            else if (rbtnidcliente.Checked)
-                BuscarId();
+            if (rbtnnombre.Checked) { BuscarNombre(); ActualizarContador(); }
+            else if (rbtnidcliente.Checked) { BuscarId(); ActualizarContador(); }
             else
                 MessageBox.Show("Seleccione un criterio de búsqueda",
                     "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
-        // EVENTO CLICK DEL BOTÓN NUEVO
+        // Búsqueda en tiempo real mientras el usuario escribe
+        private void txtbuscar_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                string texto = txtbuscar.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(texto))
+                {
+                    Mostrar();
+                    return;
+                }
+
+                if (rbtnnombre.Checked)
+                    BuscarNombre();
+                else
+                    BuscarId();
+
+                ActualizarContador();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error en la búsqueda: " + ex.Message,
+                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // *** CORRECCIÓN: ShowDialog() en lugar de Show()+Hide()
+        //     Al cerrar el FrmRegistrarCliente con DialogResult.OK se refresca aquí mismo ***
         private void btnnuevo_Click(object sender, EventArgs e)
         {
             FrmRegistrarCliente form = new FrmRegistrarCliente();
             form.Insert = true;
-            form.Show();
-            this.Hide();
+            if (form.ShowDialog() == DialogResult.OK)
+                Mostrar();
         }
 
-        // EVENTO CLICK DEL BOTÓN EDITAR
         private void btneditar_Click(object sender, EventArgs e)
         {
-            if (dlistado.SelectedRows.Count > 0)
-            {
-                FrmRegistrarCliente form = new FrmRegistrarCliente();
-                form.Edit = true;
-
-                form.txtidcliente.Text = this.dlistado.CurrentRow.Cells["idcliente"].Value.ToString();
-                form.txtnombre.Text = this.dlistado.CurrentRow.Cells["nombre"].Value.ToString();
-                form.txttelefono.Text = this.dlistado.CurrentRow.Cells["telefono"].Value.ToString();
-                form.txtdireccion.Text = this.dlistado.CurrentRow.Cells["direccion"].Value.ToString();
-
-                string estado = this.dlistado.CurrentRow.Cells["estado"].Value.ToString();
-                if (estado == "ACTIVO")
-                    form.rbtnactivo.Checked = true;
-                else
-                    form.rbtninactivo.Checked = true;
-
-                form.Show();
-                this.Hide();
-            }
-            else
+            if (dlistado.SelectedRows.Count == 0)
             {
                 MessageBox.Show("Seleccione un cliente para editar",
                     "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
+
+            FrmRegistrarCliente form = new FrmRegistrarCliente();
+            form.Edit = true;
+            form.txtidcliente.Text = dlistado.CurrentRow.Cells["idcliente"].Value.ToString();
+            form.txtnombre.Text = dlistado.CurrentRow.Cells["nombre"].Value.ToString();
+            form.txttelefono.Text = dlistado.CurrentRow.Cells["telefono"].Value.ToString();
+            form.txtdireccion.Text = dlistado.CurrentRow.Cells["direccion"].Value.ToString();
+
+            string estado = dlistado.CurrentRow.Cells["estado"].Value.ToString();
+            if (estado == "ACTIVO") form.rbtnactivo.Checked = true;
+            else form.rbtninactivo.Checked = true;
+
+            if (form.ShowDialog() == DialogResult.OK)
+                Mostrar();
         }
 
-        // EVENTO CLICK DEL BOTÓN ELIMINAR
         private void btneliminar_Click(object sender, EventArgs e)
         {
             try
             {
-                if (dlistado.SelectedRows.Count > 0)
-                {
-                    DialogResult opcion = MessageBox.Show(
-                        "¿Realmente desea eliminar permanentemente el cliente seleccionado?",
-                        "Sistema Veterinaria", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
-
-                    if (opcion == DialogResult.OK)
-                    {
-                        string idcliente = dlistado.CurrentRow.Cells["idcliente"].Value.ToString();
-                        string resultado = CN_Cliente.Eliminar(
-                            Convert.ToInt32(idcliente),
-                            FrmLogin.UsuarioActual);
-
-                        if (resultado == "OK")
-                        {
-                            MessageBox.Show("Cliente eliminado correctamente",
-                                "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            Mostrar();
-                        }
-                        else
-                        {
-                            MessageBox.Show(resultado,
-                                "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
-                }
-                else
+                if (dlistado.SelectedRows.Count == 0)
                 {
                     MessageBox.Show("Seleccione un cliente para eliminar",
                         "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                string nombre = dlistado.CurrentRow.Cells["nombre"].Value.ToString();
+                if (MessageBox.Show($"¿Eliminar permanentemente al cliente '{nombre}'?",
+                        "Sistema Veterinaria", MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
+                    == DialogResult.OK)
+                {
+                    string resultado = CN_Cliente.Eliminar(
+                        Convert.ToInt32(dlistado.CurrentRow.Cells["idcliente"].Value),
+                        FrmLogin.UsuarioActual);
+
+                    if (resultado == "OK")
+                    {
+                        MessageBox.Show("✅ Cliente eliminado correctamente",
+                            "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        Mostrar();
+                    }
+                    else
+                        MessageBox.Show(resultado,
+                            "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message + ex.StackTrace);
+                MessageBox.Show(ex.Message, "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

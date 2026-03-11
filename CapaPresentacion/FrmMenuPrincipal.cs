@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using CapaNegocio;
 
@@ -39,10 +40,8 @@ namespace CapaPresentacion
             btnConsultas.Visible = esAdmin || TryVer(rol, "Consultas");
             panelVeterinario.Visible = btnCitas.Visible || btnConsultas.Visible;
 
-            btnVentas.Visible = esAdmin || TryVer(rol, "Ventas");
-            btnCompras.Visible = esAdmin || TryVer(rol, "Compras");
-            btnPagos.Visible = esAdmin || TryVer(rol, "Pagos");
-            panelCaja.Visible = btnVentas.Visible || btnCompras.Visible || btnPagos.Visible;
+            // ── Permisos y visibilidad del módulo Caja (ventas/compras/historial)
+            ConfigurarPermisosCaja(rol, esAdmin);
 
             btnAuditoria.Visible = esAdmin || TryVer(rol, "Auditoria");
             btnSesiones.Visible = esAdmin || TryVer(rol, "Sesiones");
@@ -105,18 +104,17 @@ namespace CapaPresentacion
                 "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
         // ── CAJA ───────────────────────────────────────────────────────────────
+        // ► Reemplazados placeholders por apertura de formularios de Caja ◄
 
         private void btnVentas_Click(object sender, EventArgs e)
-            => MessageBox.Show("Módulo de Ventas en desarrollo",
-                "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            => AbrirFormularioHijo(new FrmVentas());
 
         private void btnCompras_Click(object sender, EventArgs e)
-            => MessageBox.Show("Módulo de Compras en desarrollo",
-                "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            => AbrirFormularioHijo(new FrmCompras());
 
+        // El control se llama btnPagos en el Designer; aquí abrimos el historial de caja
         private void btnPagos_Click(object sender, EventArgs e)
-            => MessageBox.Show("Módulo de Pagos en desarrollo",
-                "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            => AbrirFormularioHijo(new FrmHistorialVentas());
 
         // ── ADMINISTRACIÓN ─────────────────────────────────────────────────────
 
@@ -182,6 +180,35 @@ namespace CapaPresentacion
         {
             if (formularioActivo is FrmListadoProductos)
                 ((FrmListadoProductos)formularioActivo).Mostrar();
+        }
+
+        // ► AGREGADO: Configurar permisos del módulo Caja de forma centralizada
+        private void ConfigurarPermisosCaja(string rol, bool esAdmin)
+        {
+            bool puedeVerVentas    = esAdmin || TryVer(rol, "Ventas");
+            bool puedeVerCompras   = esAdmin || TryVer(rol, "Compras");
+            bool puedeVerPagos     = esAdmin || TryVer(rol, "Pagos"); // o "Historial de Caja" según tu BD
+
+            if (btnVentas    != null) btnVentas.Visible    = puedeVerVentas;
+            if (btnCompras   != null) btnCompras.Visible   = puedeVerCompras;
+            if (btnPagos     != null) btnPagos.Visible     = puedeVerPagos;
+
+            panelCaja.Visible = (btnVentas.Visible || btnCompras.Visible || btnPagos.Visible);
+        }
+
+        // ► AGREGADO: Refrescar módulo Caja (ej. después de confirmar una venta)
+        public void RefrescarModuloCaja()
+        {
+            try
+            {
+                // Si FrmListadoProductos está embebido en panelContenedor, refrescarlo
+                var frmProd = panelContenedor.Controls.OfType<FrmListadoProductos>().FirstOrDefault();
+                if (frmProd != null)
+                {
+                    frmProd.Mostrar();
+                }
+            }
+            catch { /* silencioso para no romper el flujo del menú */ }
         }
     }
 }
