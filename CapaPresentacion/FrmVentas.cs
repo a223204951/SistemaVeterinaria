@@ -290,13 +290,7 @@ namespace CapaPresentacion
 
                     if (resultado == "OK")
                     {
-                        MessageBox.Show(
-                            $"✅ Venta #{_idVentaActual} confirmada exitosamente.\n\n" +
-                            $"Total cobrado: ${total:N2}\n\n" +
-                            $"📊 Se aplicó ajuste de precios:\n" +
-                            $"  • Productos vendidos: +10% precio\n" +
-                            $"  • Otros productos activos: -10% precio",
-                            "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        int idVentaConfirmada = _idVentaActual;
 
                         // Limpiar estado
                         _ventaAbierta = false;
@@ -307,6 +301,10 @@ namespace CapaPresentacion
                         cmbCliente.SelectedIndex = 0;
                         CargarProductos("");
                         ActualizarEstadoBotones();
+
+                        // Abrir ticket con códigos de barras
+                        FrmTicketVenta ticket = new FrmTicketVenta(idVentaConfirmada);
+                        ticket.ShowDialog(this);
                     }
                     else
                     {
@@ -418,5 +416,73 @@ namespace CapaPresentacion
         // ── Doble click en catálogo = agregar ─────────────────────────────────
         private void dgvProductos_DoubleClick(object sender, EventArgs e)
             => btnAgregar_Click(sender, e);
+
+        // ── Escáner de código de barras ───────────────────────────────────────
+        private void txtScanner_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter) return;
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+
+            string codigo = txtScanner.Text.Trim();
+            if (string.IsNullOrWhiteSpace(codigo) ||
+                codigo == "🔲 Escanear código de barras...") return;
+
+            if (!_ventaAbierta)
+            {
+                MessageBox.Show("⚠️ Primero inicie una nueva venta antes de escanear.",
+                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtScanner.Clear();
+                return;
+            }
+
+            if (!EAN13Util.EsValido(codigo))
+            {
+                lblScannerInfo.Text = $"❌ Código inválido: {codigo}";
+                lblScannerInfo.ForeColor = Color.FromArgb(231, 76, 60);
+                txtScanner.SelectAll();
+                return;
+            }
+
+            DataTable dt = CN_Producto.BuscarPorCodigoBarras(codigo);
+
+            if (dt == null || dt.Rows.Count == 0)
+            {
+                lblScannerInfo.Text = $"❌ Producto no encontrado: {codigo}";
+                lblScannerInfo.ForeColor = Color.FromArgb(231, 76, 60);
+                txtScanner.SelectAll();
+                return;
+            }
+
+            DataRow prod = dt.Rows[0];
+            int idprod = Convert.ToInt32(prod["idproducto"]);
+            string nombre = prod["nombre"].ToString();
+            int stock = Convert.ToInt32(prod["stock"]);
+
+            if (stock <= 0)
+            {
+                lblScannerInfo.Text = $"⚠️ Sin stock: {nombre}";
+                lblScannerInfo.ForeColor = Color.FromArgb(230, 126, 34);
+                txtScanner.SelectAll();
+                return;
+            }
+
+            string resultado = CN_Venta.AgregarProducto(_idVentaActual, idprod, 1);
+
+            if (resultado == "OK")
+            {
+                lblScannerInfo.Text = $"✅ Agregado: {nombre}";
+                lblScannerInfo.ForeColor = Color.FromArgb(46, 204, 113);
+                RefrescarCarrito();
+                CargarProductos(txtBuscarProducto.Text == "Buscar producto..." ? "" : txtBuscarProducto.Text);
+            }
+            else
+            {
+                lblScannerInfo.Text = $"❌ {resultado}";
+                lblScannerInfo.ForeColor = Color.FromArgb(231, 76, 60);
+            }
+
+            txtScanner.Clear();
+        }
     }
 }

@@ -82,7 +82,8 @@ namespace CapaPresentacion
             this.dgvHistorial.RowHeadersWidth = 51;
             this.dgvHistorial.RowTemplate.Height = 35;
             this.dgvHistorial.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvHistorial.Size = new System.Drawing.Size(650, 400);
+            this.dgvHistorial.Size = new System.Drawing.Size(1150, 400);
+            this.dgvHistorial.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.dgvHistorial.TabIndex = 1;
             // 
             // panelEstadisticas
@@ -112,7 +113,8 @@ namespace CapaPresentacion
             this.panelBotones.Controls.Add(this.btnCerrar);
             this.panelBotones.Location = new System.Drawing.Point(26, 480);
             this.panelBotones.Name = "panelBotones";
-            this.panelBotones.Size = new System.Drawing.Size(929, 50);
+            this.panelBotones.Size = new System.Drawing.Size(1150, 50);
+            this.panelBotones.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.panelBotones.TabIndex = 3;
             // 
             // lblTotal
@@ -163,7 +165,7 @@ namespace CapaPresentacion
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(236)))), ((int)(((byte)(240)))), ((int)(((byte)(241)))));
-            this.ClientSize = new System.Drawing.Size(980, 550);
+            this.ClientSize = new System.Drawing.Size(1200, 700);
             this.Controls.Add(this.panelBotones);
             this.Controls.Add(this.panelEstadisticas);
             this.Controls.Add(this.dgvHistorial);

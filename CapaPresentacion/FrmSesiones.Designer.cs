@@ -62,7 +62,8 @@ namespace CapaPresentacion
             this.panelFiltros.Controls.Add(this.btnLimpiar);
             this.panelFiltros.Location = new System.Drawing.Point(27, 70);
             this.panelFiltros.Name = "panelFiltros";
-            this.panelFiltros.Size = new System.Drawing.Size(896, 100);
+            this.panelFiltros.Size = new System.Drawing.Size(1150, 100);
+            this.panelFiltros.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.panelFiltros.TabIndex = 1;
 
             // lblUsuario
@@ -177,16 +178,18 @@ namespace CapaPresentacion
             this.dgvSesiones.RowHeadersWidth = 51;
             this.dgvSesiones.RowTemplate.Height = 35;
             this.dgvSesiones.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvSesiones.Size = new System.Drawing.Size(896, 335);
+            this.dgvSesiones.Size = new System.Drawing.Size(1150, 335);
+            this.dgvSesiones.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.dgvSesiones.TabIndex = 2;
 
             // panelInfo
             this.panelInfo.Controls.Add(this.lblTotalSesiones);
             this.panelInfo.Controls.Add(this.lblTiempoPromedio);
-            this.panelInfo.Location = new System.Drawing.Point(27, 530);
+            this.panelInfo.Location = new System.Drawing.Point(20, 540);
             this.panelInfo.Name = "panelInfo";
-            this.panelInfo.Size = new System.Drawing.Size(896, 50);
+            this.panelInfo.Size = new System.Drawing.Size(1150, 50);
             this.panelInfo.TabIndex = 3;
+            this.panelInfo.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
 
             // lblTotalSesiones
             this.lblTotalSesiones.AutoSize = true;
@@ -208,7 +211,7 @@ namespace CapaPresentacion
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(236, 240, 241);
-            this.ClientSize = new System.Drawing.Size(950, 600);
+            this.ClientSize = new System.Drawing.Size(1200, 700);
             this.Controls.Add(this.panelInfo);
             this.Controls.Add(this.dgvSesiones);
             this.Controls.Add(this.panelFiltros);

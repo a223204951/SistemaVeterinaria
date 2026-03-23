@@ -58,7 +58,8 @@ namespace CapaPresentacion
             this.panel1.Controls.Add(this.groupBox1);
             this.panel1.Location = new System.Drawing.Point(27, 70);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(896, 100);
+            this.panel1.Size = new System.Drawing.Size(1150, 100);
+            this.panel1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.panel1.TabIndex = 1;
 
             // btnbuscar
@@ -155,7 +156,8 @@ namespace CapaPresentacion
             this.dlistado.RowHeadersWidth = 51;
             this.dlistado.RowTemplate.Height = 35;
             this.dlistado.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dlistado.Size = new System.Drawing.Size(896, 340);
+            this.dlistado.Size = new System.Drawing.Size(1150, 340);
+            this.dlistado.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.dlistado.TabIndex = 2;
 
             // panelBotones
@@ -165,7 +167,8 @@ namespace CapaPresentacion
             this.panelBotones.Controls.Add(this.btneliminar);
             this.panelBotones.Location = new System.Drawing.Point(27, 535);
             this.panelBotones.Name = "panelBotones";
-            this.panelBotones.Size = new System.Drawing.Size(896, 50);
+            this.panelBotones.Size = new System.Drawing.Size(1150, 50);
+            this.panelBotones.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.panelBotones.TabIndex = 3;
 
             // lblTotal
@@ -226,7 +229,7 @@ namespace CapaPresentacion
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(236, 240, 241);
-            this.ClientSize = new System.Drawing.Size(950, 600);
+            this.ClientSize = new System.Drawing.Size(1200, 700);
             this.Controls.Add(this.panelBotones);
             this.Controls.Add(this.dlistado);
             this.Controls.Add(this.panel1);

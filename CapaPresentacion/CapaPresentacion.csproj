@@ -55,11 +55,23 @@
     <Compile Include="FrmCompras.Designer.cs">
       <DependentUpon>FrmCompras.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmEtiquetaProducto.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmEtiquetaProducto.Designer.cs">
+      <DependentUpon>FrmEtiquetaProducto.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmGestionCategorias.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FrmGestionCategorias.Designer.cs">
       <DependentUpon>FrmGestionCategorias.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmHistorialComprasProveedor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmHistorialComprasProveedor.Designer.cs">
+      <DependentUpon>FrmHistorialComprasProveedor.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmHistorialPrecios.cs">
       <SubType>Form</SubType>
@@ -90,6 +102,12 @@
     </Compile>
     <Compile Include="FrmListadoProductos.Designer.cs">
       <DependentUpon>FrmListadoProductos.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmListadoProveedores.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmListadoProveedores.Designer.cs">
+      <DependentUpon>FrmListadoProveedores.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmLogin.cs">
       <SubType>Form</SubType>
@@ -127,11 +145,23 @@
     <Compile Include="FrmRegistrarProducto.Designer.cs">
       <DependentUpon>FrmRegistrarProducto.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmRegistrarProveedor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmRegistrarProveedor.Designer.cs">
+      <DependentUpon>FrmRegistrarProveedor.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmSesiones.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FrmSesiones.Designer.cs">
       <DependentUpon>FrmSesiones.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmTicketVenta.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmTicketVenta.Designer.cs">
+      <DependentUpon>FrmTicketVenta.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmVentas.cs">
       <SubType>Form</SubType>
@@ -154,6 +184,9 @@
   <ItemGroup>
     <EmbeddedResource Include="FrmAuditoria.resx">
       <DependentUpon>FrmAuditoria.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmCompras.resx">
+      <DependentUpon>FrmCompras.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FrmGestionCategorias.resx">
       <DependentUpon>FrmGestionCategorias.cs</DependentUpon>
@@ -187,6 +220,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FrmSesiones.resx">
       <DependentUpon>FrmSesiones.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmVentas.resx">
+      <DependentUpon>FrmVentas.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

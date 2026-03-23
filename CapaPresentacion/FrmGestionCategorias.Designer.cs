@@ -81,7 +81,8 @@ namespace CapaPresentacion
             this.dgvCategorias.RowHeadersWidth = 51;
             this.dgvCategorias.RowTemplate.Height = 35;
             this.dgvCategorias.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvCategorias.Size = new System.Drawing.Size(896, 400);
+            this.dgvCategorias.Size = new System.Drawing.Size(1150, 400);
+            this.dgvCategorias.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.dgvCategorias.TabIndex = 1;
             this.dgvCategorias.DoubleClick += new System.EventHandler(this.dgvCategorias_DoubleClick);
             // 
@@ -94,7 +95,8 @@ namespace CapaPresentacion
             this.panelBotones.Controls.Add(this.btnNuevo);
             this.panelBotones.Location = new System.Drawing.Point(27, 490);
             this.panelBotones.Name = "panelBotones";
-            this.panelBotones.Size = new System.Drawing.Size(896, 50);
+            this.panelBotones.Size = new System.Drawing.Size(1150, 50);
+            this.panelBotones.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.panelBotones.TabIndex = 2;
             // 
             // lblTotal
@@ -179,7 +181,7 @@ namespace CapaPresentacion
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(236, 240, 241);
-            this.ClientSize = new System.Drawing.Size(950, 600);
+            this.ClientSize = new System.Drawing.Size(1200, 700);
             this.Controls.Add(this.panelBotones);
             this.Controls.Add(this.dgvCategorias);
             this.Controls.Add(this.lblTitulo);

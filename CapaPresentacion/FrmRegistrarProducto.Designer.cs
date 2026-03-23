@@ -1,18 +1,16 @@
-﻿using System.Drawing;
+﻿using System.ComponentModel;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace CapaPresentacion
 {
     partial class FrmRegistrarProducto
     {
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
-            {
-                components.Dispose();
-            }
+            if (disposing && components != null) components.Dispose();
             base.Dispose(disposing);
         }
 
@@ -20,432 +18,317 @@ namespace CapaPresentacion
 
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmRegistrarProducto));
-            this.lblTitulo = new System.Windows.Forms.Label();
-            this.panelFormulario = new System.Windows.Forms.Panel();
-            this.lblInfoStock = new System.Windows.Forms.Label();
-            this.lblInfoPrecio = new System.Windows.Forms.Label();
-            this.groupBoxEstado = new System.Windows.Forms.GroupBox();
-            this.rbtnInactivo = new System.Windows.Forms.RadioButton();
-            this.rbtnActivo = new System.Windows.Forms.RadioButton();
-            this.lblVencimiento = new System.Windows.Forms.Label();
-            this.dtpVencimiento = new System.Windows.Forms.DateTimePicker();
-            this.chkEsMedicamento = new System.Windows.Forms.CheckBox();
-            this.label7 = new System.Windows.Forms.Label();
-            this.cmbCategoria = new System.Windows.Forms.ComboBox();
-            this.label6 = new System.Windows.Forms.Label();
-            this.nudStock = new System.Windows.Forms.NumericUpDown();
-            this.label5 = new System.Windows.Forms.Label();
-            this.nudPrecio = new System.Windows.Forms.NumericUpDown();
-            this.label4 = new System.Windows.Forms.Label();
-            this.txtDescripcion = new System.Windows.Forms.TextBox();
-            this.label2 = new System.Windows.Forms.Label();
-            this.txtNombre = new System.Windows.Forms.TextBox();
-            this.btnCancelar = new System.Windows.Forms.Button();
-            this.btnGuardar = new System.Windows.Forms.Button();
-            this.txtIdProducto = new System.Windows.Forms.TextBox();
-            this.panelInfo = new System.Windows.Forms.Panel();
-            this.label3 = new System.Windows.Forms.Label();
-            this.label1 = new System.Windows.Forms.Label();
-            this.panelFormulario.SuspendLayout();
-            this.groupBoxEstado.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.nudStock)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudPrecio)).BeginInit();
-            this.panelInfo.SuspendLayout();
+            // ── Declarar controles existentes ─────────────────────────────────
+            this.lblTitulo = new Label();
+            this.lblNombre = new Label();
+            this.txtNombre = new TextBox();
+            this.lblDescripcion = new Label();
+            this.txtDescripcion = new TextBox();
+            this.lblPrecio = new Label();
+            this.nudPrecio = new NumericUpDown();
+            this.lblInfoPrecio = new Label();
+            this.lblStock = new Label();
+            this.nudStock = new NumericUpDown();
+            this.lblInfoStock = new Label();
+            this.lblCategoria = new Label();
+            this.cmbCategoria = new ComboBox();
+            this.chkEsMedicamento = new CheckBox();
+            this.lblVencimiento = new Label();
+            this.dtpVencimiento = new DateTimePicker();
+            this.lblEstado = new Label();
+            this.rbtnActivo = new RadioButton();
+            this.rbtnInactivo = new RadioButton();
+            this.txtIdProducto = new TextBox();
+            this.lblProveedor = new Label();
+            this.cmbProveedor = new ComboBox();
+            this.btnGuardar = new Button();
+            this.btnCancelar = new Button();
+
+            // ── Nuevos controles para código de barras ─────────────────────────
+            this.panelBarcode = new Panel();
+            this.lblBarcodeTitulo = new Label();
+            this.picCodigoBarras = new PictureBox();
+            this.lblCodigoBarrasNum = new Label();
+            this.btnRegenerarCodigo = new Button();
+
+            ((ISupportInitialize)this.nudPrecio).BeginInit();
+            ((ISupportInitialize)this.nudStock).BeginInit();
+            ((ISupportInitialize)this.picCodigoBarras).BeginInit();
+            this.panelBarcode.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // lblTitulo
-            // 
+
+            // ── lblTitulo ─────────────────────────────────────────────────────
             this.lblTitulo.AutoSize = true;
-            this.lblTitulo.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
-            this.lblTitulo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            this.lblTitulo.Location = new System.Drawing.Point(30, 20);
-            this.lblTitulo.Name = "lblTitulo";
-            this.lblTitulo.Size = new System.Drawing.Size(396, 37);
-            this.lblTitulo.TabIndex = 0;
+            this.lblTitulo.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            this.lblTitulo.ForeColor = Color.FromArgb(52, 73, 94);
+            this.lblTitulo.Location = new Point(20, 15);
             this.lblTitulo.Text = "📝 Registrar Nuevo Producto";
-            // 
-            // panelFormulario
-            // 
-            this.panelFormulario.BackColor = System.Drawing.Color.White;
-            this.panelFormulario.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.panelFormulario.Controls.Add(this.lblInfoStock);
-            this.panelFormulario.Controls.Add(this.lblInfoPrecio);
-            this.panelFormulario.Controls.Add(this.groupBoxEstado);
-            this.panelFormulario.Controls.Add(this.lblVencimiento);
-            this.panelFormulario.Controls.Add(this.dtpVencimiento);
-            this.panelFormulario.Controls.Add(this.chkEsMedicamento);
-            this.panelFormulario.Controls.Add(this.label7);
-            this.panelFormulario.Controls.Add(this.cmbCategoria);
-            this.panelFormulario.Controls.Add(this.label6);
-            this.panelFormulario.Controls.Add(this.nudStock);
-            this.panelFormulario.Controls.Add(this.label5);
-            this.panelFormulario.Controls.Add(this.nudPrecio);
-            this.panelFormulario.Controls.Add(this.label4);
-            this.panelFormulario.Controls.Add(this.txtDescripcion);
-            this.panelFormulario.Controls.Add(this.label2);
-            this.panelFormulario.Controls.Add(this.txtNombre);
-            this.panelFormulario.Location = new System.Drawing.Point(30, 70);
-            this.panelFormulario.Name = "panelFormulario";
-            this.panelFormulario.Size = new System.Drawing.Size(540, 520);
-            this.panelFormulario.TabIndex = 1;
-            // 
-            // lblInfoStock
-            // 
-            this.lblInfoStock.AutoSize = true;
-            this.lblInfoStock.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic);
-            this.lblInfoStock.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(149)))), ((int)(((byte)(165)))), ((int)(((byte)(166)))));
-            this.lblInfoStock.Location = new System.Drawing.Point(230, 335);
-            this.lblInfoStock.Name = "lblInfoStock";
-            this.lblInfoStock.Size = new System.Drawing.Size(0, 20);
-            this.lblInfoStock.TabIndex = 15;
-            // 
-            // lblInfoPrecio
-            // 
+
+            // ── txtIdProducto (oculto) ────────────────────────────────────────
+            this.txtIdProducto.Location = new Point(0, 0);
+            this.txtIdProducto.Visible = false;
+
+            // ── COLUMNA IZQUIERDA — datos del producto ────────────────────────
+
+            // Nombre
+            this.lblNombre.Text = "Nombre *";
+            this.lblNombre.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblNombre.ForeColor = Color.FromArgb(52, 73, 94);
+            this.lblNombre.Location = new Point(20, 58); this.lblNombre.AutoSize = true;
+
+            this.txtNombre.Font = new Font("Segoe UI", 10F);
+            this.txtNombre.Location = new Point(20, 78);
+            this.txtNombre.Size = new Size(290, 28);
+            this.txtNombre.MaxLength = 100;
+
+            // Descripción
+            this.lblDescripcion.Text = "Descripción";
+            this.lblDescripcion.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblDescripcion.ForeColor = Color.FromArgb(52, 73, 94);
+            this.lblDescripcion.Location = new Point(20, 115); this.lblDescripcion.AutoSize = true;
+
+            this.txtDescripcion.Font = new Font("Segoe UI", 10F);
+            this.txtDescripcion.Location = new Point(20, 135);
+            this.txtDescripcion.Size = new Size(290, 60);
+            this.txtDescripcion.Multiline = true;
+            this.txtDescripcion.MaxLength = 500;
+
+            // Precio
+            this.lblPrecio.Text = "Precio (MXN) *";
+            this.lblPrecio.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblPrecio.ForeColor = Color.FromArgb(52, 73, 94);
+            this.lblPrecio.Location = new Point(20, 205); this.lblPrecio.AutoSize = true;
+
+            this.nudPrecio.Location = new Point(20, 225);
+            this.nudPrecio.Size = new Size(130, 28);
+            this.nudPrecio.DecimalPlaces = 2;
+            this.nudPrecio.Minimum = 0;
+            this.nudPrecio.Maximum = 999999;
+            this.nudPrecio.Value = 1;
+            this.nudPrecio.Font = new Font("Segoe UI", 10F);
+            this.nudPrecio.ValueChanged += new System.EventHandler(this.nudPrecio_ValueChanged);
+
+            this.lblInfoPrecio.Text = "💰 Precio moderado";
             this.lblInfoPrecio.AutoSize = true;
-            this.lblInfoPrecio.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic);
-            this.lblInfoPrecio.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(149)))), ((int)(((byte)(165)))), ((int)(((byte)(166)))));
-            this.lblInfoPrecio.Location = new System.Drawing.Point(230, 265);
-            this.lblInfoPrecio.Name = "lblInfoPrecio";
-            this.lblInfoPrecio.Size = new System.Drawing.Size(0, 20);
-            this.lblInfoPrecio.TabIndex = 14;
-            // 
-            // groupBoxEstado
-            // 
-            this.groupBoxEstado.Controls.Add(this.rbtnInactivo);
-            this.groupBoxEstado.Controls.Add(this.rbtnActivo);
-            this.groupBoxEstado.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.groupBoxEstado.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            this.groupBoxEstado.Location = new System.Drawing.Point(280, 390);
-            this.groupBoxEstado.Name = "groupBoxEstado";
-            this.groupBoxEstado.Size = new System.Drawing.Size(230, 100);
-            this.groupBoxEstado.TabIndex = 13;
-            this.groupBoxEstado.TabStop = false;
-            this.groupBoxEstado.Text = "Estado";
-            // 
-            // rbtnInactivo
-            // 
-            this.rbtnInactivo.AutoSize = true;
-            this.rbtnInactivo.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.rbtnInactivo.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.rbtnInactivo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            this.rbtnInactivo.Location = new System.Drawing.Point(15, 60);
-            this.rbtnInactivo.Name = "rbtnInactivo";
-            this.rbtnInactivo.Size = new System.Drawing.Size(128, 27);
-            this.rbtnInactivo.TabIndex = 1;
-            this.rbtnInactivo.Text = "✗ INACTIVO";
-            this.rbtnInactivo.UseVisualStyleBackColor = true;
-            // 
-            // rbtnActivo
-            // 
+            this.lblInfoPrecio.Font = new Font("Segoe UI", 8F, FontStyle.Italic);
+            this.lblInfoPrecio.ForeColor = Color.FromArgb(46, 204, 113);
+            this.lblInfoPrecio.Location = new Point(160, 230);
+
+            // Stock
+            this.lblStock.Text = "Stock *";
+            this.lblStock.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblStock.ForeColor = Color.FromArgb(52, 73, 94);
+            this.lblStock.Location = new Point(20, 263); this.lblStock.AutoSize = true;
+
+            this.nudStock.Location = new Point(20, 283);
+            this.nudStock.Size = new Size(130, 28);
+            this.nudStock.Minimum = 0;
+            this.nudStock.Maximum = 99999;
+            this.nudStock.Font = new Font("Segoe UI", 10F);
+            this.nudStock.ValueChanged += new System.EventHandler(this.nudStock_ValueChanged);
+
+            this.lblInfoStock.Text = "✅ Stock suficiente";
+            this.lblInfoStock.AutoSize = true;
+            this.lblInfoStock.Font = new Font("Segoe UI", 8F, FontStyle.Italic);
+            this.lblInfoStock.ForeColor = Color.FromArgb(46, 204, 113);
+            this.lblInfoStock.Location = new Point(160, 288);
+
+            // Categoría
+            this.lblCategoria.Text = "Categoría *";
+            this.lblCategoria.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblCategoria.ForeColor = Color.FromArgb(52, 73, 94);
+            this.lblCategoria.Location = new Point(20, 323); this.lblCategoria.AutoSize = true;
+
+            this.cmbCategoria.Location = new Point(20, 343);
+            this.cmbCategoria.Size = new Size(290, 30);
+            this.cmbCategoria.DropDownStyle = ComboBoxStyle.DropDownList;
+            this.cmbCategoria.Font = new Font("Segoe UI", 10F);
+
+            // Medicamento + vencimiento
+            this.chkEsMedicamento.Text = "Es medicamento";
+            this.chkEsMedicamento.Font = new Font("Segoe UI", 9F);
+            this.chkEsMedicamento.Location = new Point(20, 385);
+            this.chkEsMedicamento.AutoSize = true;
+            this.chkEsMedicamento.CheckedChanged += new System.EventHandler(this.chkEsMedicamento_CheckedChanged);
+
+            this.lblVencimiento.Text = "Fecha vencimiento";
+            this.lblVencimiento.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblVencimiento.ForeColor = Color.FromArgb(149, 165, 166);
+            this.lblVencimiento.Location = new Point(20, 413); this.lblVencimiento.AutoSize = true;
+
+            this.dtpVencimiento.Font = new Font("Segoe UI", 10F);
+            this.dtpVencimiento.Format = DateTimePickerFormat.Short;
+            this.dtpVencimiento.Location = new Point(20, 433);
+            this.dtpVencimiento.Size = new Size(160, 28);
+            this.dtpVencimiento.Enabled = false;
+
+            // Estado
+            this.lblEstado.Text = "Estado *";
+            this.lblEstado.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblEstado.ForeColor = Color.FromArgb(52, 73, 94);
+            this.lblEstado.Location = new Point(20, 473); this.lblEstado.AutoSize = true;
+
+            this.rbtnActivo.Text = "Activo";
+            this.rbtnActivo.Font = new Font("Segoe UI", 9F);
+            this.rbtnActivo.Location = new Point(20, 493);
             this.rbtnActivo.AutoSize = true;
             this.rbtnActivo.Checked = true;
-            this.rbtnActivo.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.rbtnActivo.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.rbtnActivo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(204)))), ((int)(((byte)(113)))));
-            this.rbtnActivo.Location = new System.Drawing.Point(15, 30);
-            this.rbtnActivo.Name = "rbtnActivo";
-            this.rbtnActivo.Size = new System.Drawing.Size(109, 27);
-            this.rbtnActivo.TabIndex = 0;
-            this.rbtnActivo.TabStop = true;
-            this.rbtnActivo.Text = "✓ ACTIVO";
-            this.rbtnActivo.UseVisualStyleBackColor = true;
-            // 
-            // lblVencimiento
-            // 
-            this.lblVencimiento.AutoSize = true;
-            this.lblVencimiento.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.lblVencimiento.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(149)))), ((int)(((byte)(165)))), ((int)(((byte)(166)))));
-            this.lblVencimiento.Location = new System.Drawing.Point(26, 430);
-            this.lblVencimiento.Name = "lblVencimiento";
-            this.lblVencimiento.Size = new System.Drawing.Size(188, 23);
-            this.lblVencimiento.TabIndex = 12;
-            this.lblVencimiento.Text = "Fecha de vencimiento:";
-            // 
-            // dtpVencimiento
-            // 
-            this.dtpVencimiento.Enabled = false;
-            this.dtpVencimiento.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.dtpVencimiento.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpVencimiento.Location = new System.Drawing.Point(30, 460);
-            this.dtpVencimiento.Name = "dtpVencimiento";
-            this.dtpVencimiento.Size = new System.Drawing.Size(220, 30);
-            this.dtpVencimiento.TabIndex = 11;
-            // 
-            // chkEsMedicamento
-            // 
-            this.chkEsMedicamento.AutoSize = true;
-            this.chkEsMedicamento.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.chkEsMedicamento.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.chkEsMedicamento.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            this.chkEsMedicamento.Location = new System.Drawing.Point(30, 390);
-            this.chkEsMedicamento.Name = "chkEsMedicamento";
-            this.chkEsMedicamento.Size = new System.Drawing.Size(217, 27);
-            this.chkEsMedicamento.TabIndex = 10;
-            this.chkEsMedicamento.Text = "💊 Es un medicamento";
-            this.chkEsMedicamento.UseVisualStyleBackColor = true;
-            this.chkEsMedicamento.CheckedChanged += new System.EventHandler(this.chkEsMedicamento_CheckedChanged);
-            // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.label7.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            this.label7.Location = new System.Drawing.Point(280, 230);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(106, 23);
-            this.label7.TabIndex = 9;
-            this.label7.Text = "Categoría: *";
-            // 
-            // cmbCategoria
-            // 
-            this.cmbCategoria.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbCategoria.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.cmbCategoria.FormattingEnabled = true;
-            this.cmbCategoria.Location = new System.Drawing.Point(284, 260);
-            this.cmbCategoria.Name = "cmbCategoria";
-            this.cmbCategoria.Size = new System.Drawing.Size(226, 31);
-            this.cmbCategoria.TabIndex = 8;
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.label6.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            this.label6.Location = new System.Drawing.Point(26, 300);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(162, 23);
-            this.label6.TabIndex = 7;
-            this.label6.Text = "Stock (unidades): *";
-            // 
-            // nudStock
-            // 
-            this.nudStock.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.nudStock.Location = new System.Drawing.Point(30, 330);
-            this.nudStock.Maximum = new decimal(new int[] {
-            999999,
-            0,
-            0,
-            0});
-            this.nudStock.Name = "nudStock";
-            this.nudStock.Size = new System.Drawing.Size(180, 30);
-            this.nudStock.TabIndex = 6;
-            this.nudStock.ValueChanged += new System.EventHandler(this.nudStock_ValueChanged);
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.label5.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            this.label5.Location = new System.Drawing.Point(26, 230);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(134, 23);
-            this.label5.TabIndex = 5;
-            this.label5.Text = "Precio (MXN): *";
-            // 
-            // nudPrecio
-            // 
-            this.nudPrecio.DecimalPlaces = 2;
-            this.nudPrecio.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.nudPrecio.Increment = new decimal(new int[] {
-            10,
-            0,
-            0,
-            0});
-            this.nudPrecio.Location = new System.Drawing.Point(30, 260);
-            this.nudPrecio.Maximum = new decimal(new int[] {
-            999999,
-            0,
-            0,
-            0});
-            this.nudPrecio.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            131072});
-            this.nudPrecio.Name = "nudPrecio";
-            this.nudPrecio.Size = new System.Drawing.Size(180, 30);
-            this.nudPrecio.TabIndex = 4;
-            this.nudPrecio.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.nudPrecio.ValueChanged += new System.EventHandler(this.nudPrecio_ValueChanged);
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.label4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            this.label4.Location = new System.Drawing.Point(26, 100);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(108, 23);
-            this.label4.TabIndex = 3;
-            this.label4.Text = "Descripción:";
-            // 
-            // txtDescripcion
-            // 
-            this.txtDescripcion.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.txtDescripcion.Location = new System.Drawing.Point(30, 130);
-            this.txtDescripcion.Multiline = true;
-            this.txtDescripcion.Name = "txtDescripcion";
-            this.txtDescripcion.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtDescripcion.Size = new System.Drawing.Size(480, 80);
-            this.txtDescripcion.TabIndex = 2;
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            this.label2.Location = new System.Drawing.Point(26, 20);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(203, 23);
-            this.label2.TabIndex = 1;
-            this.label2.Text = "Nombre del producto: *";
-            // 
-            // txtNombre
-            // 
-            this.txtNombre.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.txtNombre.Location = new System.Drawing.Point(30, 50);
-            this.txtNombre.Name = "txtNombre";
-            this.txtNombre.Size = new System.Drawing.Size(480, 30);
-            this.txtNombre.TabIndex = 0;
-            // 
-            // btnCancelar
-            // 
-            this.btnCancelar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(149)))), ((int)(((byte)(165)))), ((int)(((byte)(166)))));
-            this.btnCancelar.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnCancelar.FlatAppearance.BorderSize = 0;
-            this.btnCancelar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCancelar.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnCancelar.ForeColor = System.Drawing.Color.White;
-            this.btnCancelar.Location = new System.Drawing.Point(585, 545);
-            this.btnCancelar.Name = "btnCancelar";
-            this.btnCancelar.Size = new System.Drawing.Size(120, 45);
-            this.btnCancelar.TabIndex = 2;
-            this.btnCancelar.Text = "✗ Cancelar";
-            this.btnCancelar.UseVisualStyleBackColor = false;
-            this.btnCancelar.Click += new System.EventHandler(this.btnCancelar_Click);
-            // 
-            // btnGuardar
-            // 
-            this.btnGuardar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(204)))), ((int)(((byte)(113)))));
-            this.btnGuardar.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnGuardar.FlatAppearance.BorderSize = 0;
-            this.btnGuardar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnGuardar.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnGuardar.ForeColor = System.Drawing.Color.White;
-            this.btnGuardar.Location = new System.Drawing.Point(715, 545);
-            this.btnGuardar.Name = "btnGuardar";
-            this.btnGuardar.Size = new System.Drawing.Size(120, 45);
-            this.btnGuardar.TabIndex = 3;
+
+            // lblProveedor
+            this.lblProveedor.Text = "Proveedor";
+            this.lblProveedor.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblProveedor.ForeColor = Color.FromArgb(52, 73, 94);
+            this.lblProveedor.Location = new Point(20, 453);
+            this.lblProveedor.AutoSize = true;
+
+            // cmbProveedor
+            this.cmbProveedor.DropDownStyle = ComboBoxStyle.DropDownList;
+            this.cmbProveedor.Font = new Font("Segoe UI", 10F);
+            this.cmbProveedor.Location = new Point(20, 473);
+            this.cmbProveedor.Size = new Size(290, 30);
+
+            this.rbtnInactivo.Text = "Inactivo";
+            this.rbtnInactivo.Font = new Font("Segoe UI", 9F);
+            this.rbtnInactivo.Location = new Point(100, 493);
+            this.rbtnInactivo.AutoSize = true;
+
+            // ── PANEL CÓDIGO DE BARRAS (columna derecha) ──────────────────────
+            this.panelBarcode.BackColor = Color.White;
+            this.panelBarcode.BorderStyle = BorderStyle.FixedSingle;
+            this.panelBarcode.Location = new Point(330, 55);
+            this.panelBarcode.Size = new Size(290, 220);
+            this.panelBarcode.Controls.AddRange(new Control[] {
+                this.lblBarcodeTitulo,
+                this.picCodigoBarras,
+                this.lblCodigoBarrasNum,
+                this.btnRegenerarCodigo
+            });
+
+            this.lblBarcodeTitulo.Text = "🔲 Código de Barras EAN-13";
+            this.lblBarcodeTitulo.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblBarcodeTitulo.ForeColor = Color.FromArgb(52, 73, 94);
+            this.lblBarcodeTitulo.Location = new Point(8, 10);
+            this.lblBarcodeTitulo.AutoSize = true;
+
+            this.picCodigoBarras.Location = new Point(8, 35);
+            this.picCodigoBarras.Size = new Size(272, 90);
+            this.picCodigoBarras.SizeMode = PictureBoxSizeMode.StretchImage;
+            this.picCodigoBarras.BackColor = Color.White;
+            this.picCodigoBarras.BorderStyle = BorderStyle.FixedSingle;
+            this.picCodigoBarras.Visible = false;
+
+            this.lblCodigoBarrasNum.Text = "Se generará al guardar";
+            this.lblCodigoBarrasNum.Font = new Font("Courier New", 10F, FontStyle.Bold);
+            this.lblCodigoBarrasNum.ForeColor = Color.FromArgb(149, 165, 166);
+            this.lblCodigoBarrasNum.Location = new Point(8, 132);
+            this.lblCodigoBarrasNum.Size = new Size(272, 22);
+            this.lblCodigoBarrasNum.TextAlign = ContentAlignment.MiddleCenter;
+
+            this.btnRegenerarCodigo.Text = "🔄 Regenerar código";
+            this.btnRegenerarCodigo.Location = new Point(8, 163);
+            this.btnRegenerarCodigo.Size = new Size(272, 36);
+            this.btnRegenerarCodigo.BackColor = Color.FromArgb(142, 68, 173);
+            this.btnRegenerarCodigo.ForeColor = Color.White;
+            this.btnRegenerarCodigo.FlatStyle = FlatStyle.Flat;
+            this.btnRegenerarCodigo.FlatAppearance.BorderSize = 0;
+            this.btnRegenerarCodigo.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.btnRegenerarCodigo.Cursor = Cursors.Hand;
+            this.btnRegenerarCodigo.Visible = false;
+            this.btnRegenerarCodigo.Click += new System.EventHandler(this.btnRegenerarCodigo_Click);
+
+            // ── Botones Guardar / Cancelar ────────────────────────────────────
             this.btnGuardar.Text = "💾 Guardar";
-            this.btnGuardar.UseVisualStyleBackColor = false;
+            this.btnGuardar.Location = new Point(20, 535);
+            this.btnGuardar.Size = new Size(140, 42);
+            this.btnGuardar.BackColor = Color.FromArgb(46, 204, 113);
+            this.btnGuardar.ForeColor = Color.White;
+            this.btnGuardar.FlatStyle = FlatStyle.Flat;
+            this.btnGuardar.FlatAppearance.BorderSize = 0;
+            this.btnGuardar.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            this.btnGuardar.Cursor = Cursors.Hand;
             this.btnGuardar.Click += new System.EventHandler(this.btnGuardar_Click);
-            // 
-            // txtIdProducto
-            // 
-            this.txtIdProducto.Location = new System.Drawing.Point(30, 600);
-            this.txtIdProducto.Name = "txtIdProducto";
-            this.txtIdProducto.Size = new System.Drawing.Size(100, 22);
-            this.txtIdProducto.TabIndex = 4;
-            this.txtIdProducto.Visible = false;
-            // 
-            // panelInfo
-            // 
-            this.panelInfo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(243)))), ((int)(((byte)(224)))));
-            this.panelInfo.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.panelInfo.Controls.Add(this.label3);
-            this.panelInfo.Controls.Add(this.label1);
-            this.panelInfo.Location = new System.Drawing.Point(590, 70);
-            this.panelInfo.Name = "panelInfo";
-            this.panelInfo.Size = new System.Drawing.Size(245, 450);
-            this.panelInfo.TabIndex = 5;
-            // 
-            // label3
-            // 
-            this.label3.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.label3.Location = new System.Drawing.Point(15, 60);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(215, 370);
-            this.label3.TabIndex = 1;
-            this.label3.Text = resources.GetString("label3.Text");
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
-            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(126)))), ((int)(((byte)(34)))));
-            this.label1.Location = new System.Drawing.Point(10, 15);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(149, 25);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "⚠️ Información";
-            // 
-            // FrmRegistrarProducto
-            // 
+
+            this.btnCancelar.Text = "✗ Cancelar";
+            this.btnCancelar.Location = new Point(170, 535);
+            this.btnCancelar.Size = new Size(140, 42);
+            this.btnCancelar.BackColor = Color.FromArgb(231, 76, 60);
+            this.btnCancelar.ForeColor = Color.White;
+            this.btnCancelar.FlatStyle = FlatStyle.Flat;
+            this.btnCancelar.FlatAppearance.BorderSize = 0;
+            this.btnCancelar.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            this.btnCancelar.Cursor = Cursors.Hand;
+            this.btnCancelar.Click += new System.EventHandler(this.btnCancelar_Click);
+
+            // ── FrmRegistrarProducto ──────────────────────────────────────────
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(236)))), ((int)(((byte)(240)))), ((int)(((byte)(241)))));
-            this.ClientSize = new System.Drawing.Size(860, 610);
-            this.Controls.Add(this.panelInfo);
-            this.Controls.Add(this.txtIdProducto);
-            this.Controls.Add(this.btnGuardar);
-            this.Controls.Add(this.btnCancelar);
-            this.Controls.Add(this.panelFormulario);
-            this.Controls.Add(this.lblTitulo);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.BackColor = Color.FromArgb(236, 240, 241);
+            this.ClientSize = new Size(640, 595);
             this.KeyPreview = true;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.StartPosition = FormStartPosition.CenterParent;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "FrmRegistrarProducto";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Registrar Producto - Sistema Veterinaria";
+            this.Text = "Producto";
+            this.Controls.AddRange(new Control[] {
+                this.lblProveedor, this.cmbProveedor,
+                this.lblTitulo, this.txtIdProducto,
+                // Col izquierda
+                this.lblNombre, this.txtNombre,
+                this.lblDescripcion, this.txtDescripcion,
+                this.lblPrecio, this.nudPrecio, this.lblInfoPrecio,
+                this.lblStock, this.nudStock, this.lblInfoStock,
+                this.lblCategoria, this.cmbCategoria,
+                this.chkEsMedicamento, this.lblVencimiento, this.dtpVencimiento,
+                this.lblEstado, this.rbtnActivo, this.rbtnInactivo,
+                this.btnGuardar, this.btnCancelar,
+                // Col derecha
+                this.panelBarcode
+            });
             this.Load += new System.EventHandler(this.FrmRegistrarProducto_Load);
-            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FrmRegistrarProducto_KeyDown);
-            this.panelFormulario.ResumeLayout(false);
-            this.panelFormulario.PerformLayout();
-            this.groupBoxEstado.ResumeLayout(false);
-            this.groupBoxEstado.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.nudStock)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudPrecio)).EndInit();
-            this.panelInfo.ResumeLayout(false);
-            this.panelInfo.PerformLayout();
+            this.KeyDown += new KeyEventHandler(this.FrmRegistrarProducto_KeyDown);
+
+            ((ISupportInitialize)this.nudPrecio).EndInit();
+            ((ISupportInitialize)this.nudStock).EndInit();
+            ((ISupportInitialize)this.picCodigoBarras).EndInit();
+            this.panelBarcode.ResumeLayout(false);
+            this.panelBarcode.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         #endregion
 
-        private System.Windows.Forms.Label lblTitulo;
-        private System.Windows.Forms.Panel panelFormulario;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.Label label7;
-        public System.Windows.Forms.CheckBox chkEsMedicamento;
-        private System.Windows.Forms.Label lblVencimiento;
-        private System.Windows.Forms.GroupBox groupBoxEstado;
-        private System.Windows.Forms.Button btnCancelar;
-        private System.Windows.Forms.Button btnGuardar;
-        private System.Windows.Forms.Label lblInfoPrecio;
-        private System.Windows.Forms.Label lblInfoStock;
-        private System.Windows.Forms.Panel panelInfo;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Label label3;
-        public System.Windows.Forms.TextBox txtNombre;
-        public System.Windows.Forms.TextBox txtDescripcion;
-        public System.Windows.Forms.NumericUpDown nudPrecio;
-        public System.Windows.Forms.NumericUpDown nudStock;
-        public System.Windows.Forms.ComboBox cmbCategoria;
-        public System.Windows.Forms.DateTimePicker dtpVencimiento;
-        public System.Windows.Forms.RadioButton rbtnActivo;
-        public System.Windows.Forms.RadioButton rbtnInactivo;
-        public System.Windows.Forms.TextBox txtIdProducto;
+        // ── Declaraciones ─────────────────────────────────────────────────────
+        private Label lblTitulo;
+        public TextBox txtIdProducto;
+        private Label lblNombre;
+        public TextBox txtNombre;
+        private Label lblDescripcion;
+        public TextBox txtDescripcion;
+        private Label lblPrecio;
+        public NumericUpDown nudPrecio;
+        private Label lblInfoPrecio;
+        private Label lblStock;
+        public NumericUpDown nudStock;
+        private Label lblInfoStock;
+        private Label lblCategoria;
+        public ComboBox cmbCategoria;
+        public CheckBox chkEsMedicamento;
+        private Label lblVencimiento;
+        public DateTimePicker dtpVencimiento;
+        private Label lblEstado;
+        public RadioButton rbtnActivo;
+        public RadioButton rbtnInactivo;
+        private Label lblProveedor;
+        public ComboBox cmbProveedor;
+        private Button btnGuardar;
+        private Button btnCancelar;
+        // Nuevos
+        private Panel panelBarcode;
+        private Label lblBarcodeTitulo;
+        private PictureBox picCodigoBarras;
+        private Label lblCodigoBarrasNum;
+        private Button btnRegenerarCodigo;
     }
 }

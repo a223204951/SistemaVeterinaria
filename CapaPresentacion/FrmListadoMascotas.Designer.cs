@@ -58,7 +58,8 @@ namespace CapaPresentacion
             this.panelBusqueda.Controls.Add(this.btnBuscar);
             this.panelBusqueda.Location = new System.Drawing.Point(27, 70);
             this.panelBusqueda.Name = "panelBusqueda";
-            this.panelBusqueda.Size = new System.Drawing.Size(896, 100);
+            this.panelBusqueda.Size = new System.Drawing.Size(1150, 100);
+            this.panelBusqueda.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.panelBusqueda.TabIndex = 1;
 
             // ── groupBoxBuscar (radio buttons) ─────────────────────────────────
@@ -155,7 +156,8 @@ namespace CapaPresentacion
             this.dgvMascotas.RowHeadersWidth = 51;
             this.dgvMascotas.RowTemplate.Height = 35;
             this.dgvMascotas.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvMascotas.Size = new System.Drawing.Size(896, 340);
+            this.dgvMascotas.Size = new System.Drawing.Size(1150, 340);
+            this.dgvMascotas.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.dgvMascotas.TabIndex = 2;
             this.dgvMascotas.DoubleClick += new System.EventHandler(this.dgvMascotas_DoubleClick);
 
@@ -166,7 +168,8 @@ namespace CapaPresentacion
             this.panelBotones.Controls.Add(this.btnnuevo);
             this.panelBotones.Location = new System.Drawing.Point(27, 535);
             this.panelBotones.Name = "panelBotones";
-            this.panelBotones.Size = new System.Drawing.Size(896, 50);
+            this.panelBotones.Size = new System.Drawing.Size(1150, 50);
+            this.panelBotones.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.panelBotones.TabIndex = 3;
 
             // ── lblTotal ───────────────────────────────────────────────────────
@@ -227,7 +230,7 @@ namespace CapaPresentacion
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(236, 240, 241);
-            this.ClientSize = new System.Drawing.Size(950, 600);
+            this.ClientSize = new System.Drawing.Size(1200, 700);
             this.Controls.Add(this.panelBotones);
             this.Controls.Add(this.dgvMascotas);
             this.Controls.Add(this.panelBusqueda);

@@ -4,74 +4,29 @@ using CapaDatos;
 
 namespace CapaNegocio
 {
-    /// <summary>
-    /// CAPA DE NEGOCIO - GESTIÓN DE PRODUCTOS
-    /// Incluye validaciones y lógica de negocio para el sistema de precios dinámicos
-    /// Ahora con categorías como tabla separada
-    /// </summary>
     public class CN_Producto
     {
-        // INSTANCIA DE LA CAPA DE DATOS
         private static CD_Producto objDato = new CD_Producto();
 
-        /// <summary>
-        /// MÉTODO PARA LISTAR TODOS LOS PRODUCTOS
-        /// </summary>
+        // ── Listar ───────────────────────────────────────────────────────────
         public static DataTable Listar()
-        {
-            return objDato.Listar();
-        }
+            => objDato.Listar();
 
+        // ── Guardar (genera y asigna EAN-13 automáticamente) ─────────────────
         /// <summary>
-        /// MÉTODO PARA GUARDAR UN NUEVO PRODUCTO
-        /// Incluye validaciones de negocio
+        /// Guarda un nuevo producto y le asigna un código de barras EAN-13
+        /// basado en el idproducto recién generado.
         /// </summary>
-        public static string Guardar(string nombre, string descripcion, decimal precio, int stock,
-                                     string estado, int idcategoria, bool esMedicamento, DateTime? fechaVencimiento)
+        public static string Guardar(string nombre, string descripcion, decimal precio,
+            int stock, string estado, int idcategoria, bool esMedicamento,
+            DateTime? fechaVencimiento, int? idproveedor = null)
         {
-            // =============================================
-            // VALIDACIONES DE NEGOCIO
-            // =============================================
+            if (string.IsNullOrWhiteSpace(nombre)) return "El nombre es obligatorio";
+            if (precio <= 0) return "El precio debe ser mayor a $0";
+            if (idcategoria <= 0) return "Seleccione una categoría";
 
-            // VALIDAR NOMBRE
-            if (string.IsNullOrWhiteSpace(nombre))
-                return "El nombre del producto es obligatorio";
-
-            if (nombre.Length < 3)
-                return "El nombre debe tener al menos 3 caracteres";
-
-            // VALIDAR PRECIO
-            if (precio <= 0)
-                return "El precio debe ser mayor a $0";
-
-            if (precio > 999999.99m)
-                return "El precio no puede exceder $999,999.99";
-
-            // VALIDAR STOCK
-            if (stock < 0)
-                return "El stock no puede ser negativo";
-
-            if (stock > 999999)
-                return "El stock no puede exceder 999,999 unidades";
-
-            // VALIDAR CATEGORÍA
-            if (idcategoria <= 0)
-                return "Debe seleccionar una categoría válida";
-
-            // VALIDAR FECHA DE VENCIMIENTO PARA MEDICAMENTOS
-            if (esMedicamento)
-            {
-                if (!fechaVencimiento.HasValue)
-                    return "Los medicamentos deben tener fecha de vencimiento";
-
-                if (fechaVencimiento.Value < DateTime.Now.Date)
-                    return "La fecha de vencimiento no puede ser anterior a hoy";
-            }
-
-            // =============================================
-            // CREAR OBJETO Y GUARDAR
-            // =============================================
-            CD_Producto obj = new CD_Producto
+            // Paso 1: Insertar sin código de barras para obtener el ID
+            CD_Producto prod = new CD_Producto
             {
                 Nombre = nombre.Trim(),
                 Descripcion = descripcion?.Trim() ?? "",
@@ -80,39 +35,48 @@ namespace CapaNegocio
                 Estado = estado,
                 Idcategoria = idcategoria,
                 EsMedicamento = esMedicamento,
-                FechaVencimiento = fechaVencimiento
+                FechaVencimiento = fechaVencimiento,
+                CodigoBarras = null,  // se asignará en paso 2
+                Idproveedor = idproveedor
             };
 
-            return objDato.Guardar(obj);
+            string res = objDato.Guardar(prod);
+            if (res != "OK") return res;
+
+            // Paso 2: Obtener el idproducto recién insertado
+            DataTable dt = objDato.BuscarNombre(new CD_Producto { Buscar = nombre.Trim() });
+            if (dt == null || dt.Rows.Count == 0) return "OK"; // si falla el código no bloquea
+
+            // Tomar el producto con mayor id (el recién creado)
+            int idNuevo = 0;
+            foreach (DataRow row in dt.Rows)
+            {
+                int id = Convert.ToInt32(row["idproducto"]);
+                if (id > idNuevo) idNuevo = id;
+            }
+
+            if (idNuevo <= 0) return "OK";
+
+            // Paso 3: Generar EAN-13 y guardarlo
+            try
+            {
+                string codigoBarras = EAN13Util.Generar(idNuevo);
+                objDato.GuardarCodigoBarras(idNuevo, codigoBarras);
+            }
+            catch { /* No bloquear si falla la generación del código */ }
+
+            return "OK";
         }
 
-        /// <summary>
-        /// MÉTODO PARA EDITAR UN PRODUCTO EXISTENTE
-        /// </summary>
-        public static string Editar(int idproducto, string nombre, string descripcion, decimal precio,
-                                   int stock, string estado, int idcategoria, bool esMedicamento, DateTime? fechaVencimiento)
+        // ── Editar ───────────────────────────────────────────────────────────
+        public static string Editar(int idproducto, string nombre, string descripcion,
+            decimal precio, int stock, string estado, int idcategoria,
+            bool esMedicamento, DateTime? fechaVencimiento, int? idproveedor = null)
         {
-            // VALIDACIONES
-            if (idproducto <= 0)
-                return "ID de producto inválido";
+            if (string.IsNullOrWhiteSpace(nombre)) return "El nombre es obligatorio";
+            if (precio <= 0) return "El precio debe ser mayor a $0";
 
-            if (string.IsNullOrWhiteSpace(nombre))
-                return "El nombre del producto es obligatorio";
-
-            if (precio <= 0)
-                return "El precio debe ser mayor a $0";
-
-            if (stock < 0)
-                return "El stock no puede ser negativo";
-
-            if (idcategoria <= 0)
-                return "Debe seleccionar una categoría válida";
-
-            if (esMedicamento && !fechaVencimiento.HasValue)
-                return "Los medicamentos deben tener fecha de vencimiento";
-
-            // CREAR OBJETO Y EDITAR
-            CD_Producto obj = new CD_Producto
+            CD_Producto prod = new CD_Producto
             {
                 Idproducto = idproducto,
                 Nombre = nombre.Trim(),
@@ -122,134 +86,69 @@ namespace CapaNegocio
                 Estado = estado,
                 Idcategoria = idcategoria,
                 EsMedicamento = esMedicamento,
-                FechaVencimiento = fechaVencimiento
+                FechaVencimiento = fechaVencimiento,
+                Idproveedor = idproveedor
             };
-
-            return objDato.Editar(obj);
+            return objDato.Editar(prod);
         }
 
-        /// <summary>
-        /// MÉTODO PARA ELIMINAR UN PRODUCTO
-        /// </summary>
+        // ── Eliminar ─────────────────────────────────────────────────────────
         public static string Eliminar(int idproducto)
         {
-            if (idproducto <= 0)
-                return "ID de producto inválido";
-
-            CD_Producto obj = new CD_Producto
-            {
-                Idproducto = idproducto
-            };
-
-            return objDato.Eliminar(obj);
+            if (idproducto <= 0) return "Producto inválido";
+            return objDato.Eliminar(new CD_Producto { Idproducto = idproducto });
         }
 
+        // ── Asignar / regenerar código de barras ──────────────────────────────
         /// <summary>
-        /// MÉTODO PARA BUSCAR PRODUCTOS POR NOMBRE
+        /// Genera y guarda un nuevo EAN-13 para el producto indicado.
+        /// Útil para productos que ya existían antes de implementar esta funcionalidad.
         /// </summary>
-        public static DataTable BuscarNombre(string nombre)
+        public static string RegenerarCodigoBarras(int idproducto)
         {
-            CD_Producto obj = new CD_Producto
+            if (idproducto <= 0) return "Producto inválido";
+            try
             {
-                Buscar = nombre
-            };
-
-            return objDato.BuscarNombre(obj);
+                string codigo = EAN13Util.Generar(idproducto);
+                string res = objDato.GuardarCodigoBarras(idproducto, codigo);
+                return res == "OK" ? codigo : res;
+            }
+            catch (Exception ex) { return ex.Message; }
         }
 
+        // ── Buscar por código de barras ───────────────────────────────────────
         /// <summary>
-        /// MÉTODO PARA BUSCAR PRODUCTOS POR CATEGORÍA
-        /// Ahora usa el ID de categoría
+        /// Busca un producto activo por su código de barras EAN-13.
+        /// Devuelve DataTable con 1 fila si existe, 0 filas si no.
         /// </summary>
+        public static DataTable BuscarPorCodigoBarras(string codigoBarras)
+        {
+            if (string.IsNullOrWhiteSpace(codigoBarras))
+                return new DataTable();
+            return objDato.BuscarPorCodigoBarras(codigoBarras);
+        }
+
+        // ── Búsquedas existentes ─────────────────────────────────────────────
+        public static DataTable BuscarNombre(string buscar)
+            => objDato.BuscarNombre(new CD_Producto { Buscar = buscar });
+
         public static DataTable BuscarCategoria(int idcategoria)
-        {
-            return objDato.BuscarCategoria(idcategoria);
-        }
+            => objDato.BuscarCategoria(idcategoria);
 
-        /// <summary>
-        /// MÉTODO PARA AJUSTAR PRECIOS DESPUÉS DE UNA VENTA
-        /// Implementa la lógica de precios dinámicos
-        /// </summary>
+        // ── Precios dinámicos ────────────────────────────────────────────────
         public static string AjustarPreciosVenta(int idproductoVendido, int cantidadVendida)
-        {
-            if (idproductoVendido <= 0)
-                return "ID de producto inválido";
+            => objDato.AjustarPreciosVenta(idproductoVendido, cantidadVendida);
 
-            if (cantidadVendida <= 0)
-                return "La cantidad vendida debe ser mayor a 0";
-
-            return objDato.AjustarPreciosVenta(idproductoVendido, cantidadVendida);
-        }
-
-        /// <summary>
-        /// MÉTODO PARA AJUSTAR PRECIOS EN COMPRA MÚLTIPLE
-        /// Todos los productos comprados suben 10%
-        /// </summary>
         public static string AjustarPreciosCompraMultiple(string idsProductos)
-        {
-            if (string.IsNullOrWhiteSpace(idsProductos))
-                return "No se proporcionaron IDs de productos";
+            => objDato.AjustarPreciosCompraMultiple(idsProductos);
 
-            return objDato.AjustarPreciosCompraMultiple(idsProductos);
-        }
-
-        /// <summary>
-        /// MÉTODO PARA OBTENER HISTORIAL DE PRECIOS DE UN PRODUCTO
-        /// </summary>
         public static DataTable ObtenerHistorialPrecios(int idproducto)
-        {
-            if (idproducto <= 0)
-                return null;
+            => objDato.ObtenerHistorialPrecios(idproducto);
 
-            return objDato.ObtenerHistorialPrecios(idproducto);
-        }
-
-        /// <summary>
-        /// MÉTODO PARA OBTENER PRODUCTOS PRÓXIMOS A VENCER
-        /// Retorna productos que vencen en los próximos 30 días
-        /// </summary>
-        public static DataTable ObtenerProductosProximosVencer()
-        {
-            DataTable todos = objDato.Listar();
-            DataTable proximosVencer = todos.Clone();
-
-            DateTime fechaLimite = DateTime.Now.AddDays(30);
-
-            foreach (DataRow row in todos.Rows)
-            {
-                if (row["fecha_vencimiento"] != DBNull.Value)
-                {
-                    DateTime fechaVenc = Convert.ToDateTime(row["fecha_vencimiento"]);
-
-                    if (fechaVenc <= fechaLimite && fechaVenc >= DateTime.Now)
-                    {
-                        proximosVencer.ImportRow(row);
-                    }
-                }
-            }
-
-            return proximosVencer;
-        }
-
-        /// <summary>
-        /// MÉTODO PARA OBTENER PRODUCTOS CON STOCK BAJO (<=10)
-        /// </summary>
         public static DataTable ObtenerProductosStockBajo()
-        {
-            DataTable todos = objDato.Listar();
-            DataTable stockBajo = todos.Clone();
+            => objDato.ObtenerProductosStockBajo();
 
-            foreach (DataRow row in todos.Rows)
-            {
-                int stock = Convert.ToInt32(row["stock"]);
-
-                if (stock <= 10)
-                {
-                    stockBajo.ImportRow(row);
-                }
-            }
-
-            return stockBajo;
-        }
+        public static DataTable ObtenerProductosProximosVencer()
+            => objDato.ObtenerProductosProximosVencer();
     }
 }

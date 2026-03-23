@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Data;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
 using CapaNegocio;
 
@@ -21,8 +21,10 @@ namespace CapaPresentacion
             lblUsuario.Text = $"Usuario: {FrmLogin.UsuarioActual}";
             lblRol.Text = $"Rol: {FrmLogin.RolActual}";
             ConfigurarPermisosPorRol();
+            CargarNotificaciones();
         }
 
+        // ── Permisos ──────────────────────────────────────────────────────────
         private void ConfigurarPermisosPorRol()
         {
             string rol = FrmLogin.RolActual;
@@ -40,8 +42,10 @@ namespace CapaPresentacion
             btnConsultas.Visible = esAdmin || TryVer(rol, "Consultas");
             panelVeterinario.Visible = btnCitas.Visible || btnConsultas.Visible;
 
-            // ── Permisos y visibilidad del módulo Caja (ventas/compras/historial)
-            ConfigurarPermisosCaja(rol, esAdmin);
+            btnVentas.Visible = esAdmin || TryVer(rol, "Ventas");
+            btnCompras.Visible = esAdmin || TryVer(rol, "Compras");
+            btnPagos.Visible = esAdmin || TryVer(rol, "Pagos");
+            panelCaja.Visible = btnVentas.Visible || btnCompras.Visible || btnPagos.Visible;
 
             btnAuditoria.Visible = esAdmin || TryVer(rol, "Auditoria");
             btnSesiones.Visible = esAdmin || TryVer(rol, "Sesiones");
@@ -55,13 +59,116 @@ namespace CapaPresentacion
             catch { return false; }
         }
 
+        // ── Notificaciones de stock bajo ──────────────────────────────────────
+        private void CargarNotificaciones()
+        {
+            try
+            {
+                panelNotificaciones.Controls.Clear();
+
+                DataTable stockBajo = CN_Producto.ObtenerProductosStockBajo();
+                DataTable proxVencer = CN_Producto.ObtenerProductosProximosVencer();
+
+                int totalAlertas = (stockBajo?.Rows.Count ?? 0) + (proxVencer?.Rows.Count ?? 0);
+
+                if (totalAlertas == 0)
+                {
+                    Label lblOk = new Label
+                    {
+                        Text = "✅ Sin alertas pendientes",
+                        Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
+                        ForeColor = Color.FromArgb(46, 204, 113),
+                        AutoSize = true,
+                        Location = new Point(8, 8)
+                    };
+                    panelNotificaciones.Controls.Add(lblOk);
+                    lblNotifBadge.Visible = false;
+                    return;
+                }
+
+                lblNotifBadge.Text = totalAlertas.ToString();
+                lblNotifBadge.Visible = true;
+
+                int y = 5;
+
+                // Stock bajo
+                if (stockBajo != null)
+                {
+                    foreach (DataRow row in stockBajo.Rows)
+                    {
+                        string nombre = row["nombre"].ToString();
+                        int stock = Convert.ToInt32(row["stock"]);
+
+                        LinkLabel lnk = new LinkLabel
+                        {
+                            Text = $"⚠️ {nombre} — stock: {stock}",
+                            Font = new Font("Segoe UI", 8.5F),
+                            ForeColor = stock == 0
+                                ? Color.FromArgb(231, 76, 60)
+                                : Color.FromArgb(230, 126, 34),
+                            AutoSize = false,
+                            Size = new Size(panelNotificaciones.Width - 16, 22),
+                            Location = new Point(8, y),
+                            Tag = "compras"
+                        };
+                        lnk.LinkColor = lnk.ForeColor;
+                        lnk.ActiveLinkColor = Color.White;
+                        lnk.LinkBehavior = LinkBehavior.HoverUnderline;
+                        lnk.LinkClicked += Notificacion_Click;
+                        panelNotificaciones.Controls.Add(lnk);
+                        y += 24;
+                    }
+                }
+
+                // Próximos a vencer
+                if (proxVencer != null)
+                {
+                    foreach (DataRow row in proxVencer.Rows)
+                    {
+                        string nombre = row["nombre"].ToString();
+                        DateTime fecha = Convert.ToDateTime(row["fecha_vencimiento"]);
+                        int dias = (int)(fecha - DateTime.Today).TotalDays;
+
+                        LinkLabel lnk = new LinkLabel
+                        {
+                            Text = $"🕐 {nombre} — vence en {dias}d",
+                            Font = new Font("Segoe UI", 8.5F),
+                            ForeColor = Color.FromArgb(231, 76, 60),
+                            AutoSize = false,
+                            Size = new Size(panelNotificaciones.Width - 16, 22),
+                            Location = new Point(8, y),
+                            Tag = "productos"
+                        };
+                        lnk.LinkColor = lnk.ForeColor;
+                        lnk.LinkBehavior = LinkBehavior.HoverUnderline;
+                        lnk.LinkClicked += Notificacion_Click;
+                        panelNotificaciones.Controls.Add(lnk);
+                        y += 24;
+                    }
+                }
+
+                panelNotificaciones.AutoScrollMinSize = new Size(0, y + 5);
+            }
+            catch { /* Silencioso — no bloquear carga del menú */ }
+        }
+
+        // Al hacer clic en una notificación redirige al módulo correspondiente
+        private void Notificacion_Click(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            string destino = (sender as LinkLabel)?.Tag?.ToString() ?? "";
+            if (destino == "compras")
+                AbrirFormularioHijo(new FrmCompras());
+            else if (destino == "productos")
+                AbrirFormularioHijo(new FrmListadoProductos());
+        }
+
+        // ── Abrir formulario embebido ─────────────────────────────────────────
         private void AbrirFormularioHijo(Form formularioHijo)
         {
             if (formularioActivo != null)
                 formularioActivo.Close();
 
             formularioActivo = formularioHijo;
-
             formularioHijo.TopLevel = false;
             formularioHijo.FormBorderStyle = FormBorderStyle.None;
             formularioHijo.Dock = DockStyle.Fill;
@@ -74,8 +181,7 @@ namespace CapaPresentacion
             formularioHijo.Show();
         }
 
-        // ── GESTIÓN ────────────────────────────────────────────────────────────
-
+        // ── GESTIÓN ───────────────────────────────────────────────────────────
         private void btnClientes_Click(object sender, EventArgs e)
             => AbrirFormularioHijo(new FrmListadoClientes());
 
@@ -90,11 +196,9 @@ namespace CapaPresentacion
             => AbrirFormularioHijo(new FrmListadoProductos());
 
         private void btnProveedores_Click(object sender, EventArgs e)
-            => MessageBox.Show("Módulo de Proveedores en desarrollo",
-                "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            => AbrirFormularioHijo(new FrmListadoProveedores());
 
-        // ── VETERINARIO ────────────────────────────────────────────────────────
-
+        // ── VETERINARIO ───────────────────────────────────────────────────────
         private void btnCitas_Click(object sender, EventArgs e)
             => MessageBox.Show("Módulo de Citas en desarrollo",
                 "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -103,44 +207,34 @@ namespace CapaPresentacion
             => MessageBox.Show("Módulo de Consultas en desarrollo",
                 "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-        // ── CAJA ───────────────────────────────────────────────────────────────
-        // ► Reemplazados placeholders por apertura de formularios de Caja ◄
-
+        // ── CAJA ──────────────────────────────────────────────────────────────
         private void btnVentas_Click(object sender, EventArgs e)
             => AbrirFormularioHijo(new FrmVentas());
 
         private void btnCompras_Click(object sender, EventArgs e)
             => AbrirFormularioHijo(new FrmCompras());
 
-        // El control se llama btnPagos en el Designer; aquí abrimos el historial de caja
         private void btnPagos_Click(object sender, EventArgs e)
             => AbrirFormularioHijo(new FrmHistorialVentas());
 
-        // ── ADMINISTRACIÓN ─────────────────────────────────────────────────────
-
+        // ── ADMINISTRACIÓN ────────────────────────────────────────────────────
         private void btnAuditoria_Click(object sender, EventArgs e)
             => AbrirFormularioHijo(new FrmAuditoria());
 
         private void btnSesiones_Click(object sender, EventArgs e)
             => AbrirFormularioHijo(new FrmSesiones());
 
-        // *** CORRECCIÓN: ahora Categorías se abre embebido igual que Auditoría/Sesiones.
-        //     FrmGestionCategorias.Designer.cs ya tiene FormBorderStyle.None. ***
         private void btnCategorias_Click(object sender, EventArgs e)
             => AbrirFormularioHijo(new FrmGestionCategorias());
 
-        // ── SESIÓN / SALIDA ────────────────────────────────────────────────────
-
+        // ── SESIÓN / SALIDA ───────────────────────────────────────────────────
         private void btnCerrarSesion_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show("¿Desea cerrar sesión?", "Sistema Veterinaria",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 if (FrmLogin.IdSesionActual > 0)
-                {
-                    CN_Sesion.CerrarSesion(FrmLogin.IdSesionActual);
-                    FrmLogin.IdSesionActual = 0;
-                }
+                { CN_Sesion.CerrarSesion(FrmLogin.IdSesionActual); FrmLogin.IdSesionActual = 0; }
                 this.Hide();
                 FrmLogin login = new FrmLogin();
                 login.Show();
@@ -154,16 +248,12 @@ namespace CapaPresentacion
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 if (FrmLogin.IdSesionActual > 0)
-                {
-                    CN_Sesion.CerrarSesion(FrmLogin.IdSesionActual);
-                    FrmLogin.IdSesionActual = 0;
-                }
+                { CN_Sesion.CerrarSesion(FrmLogin.IdSesionActual); FrmLogin.IdSesionActual = 0; }
                 Application.Exit();
             }
         }
 
-        // ── REFRESH PÚBLICOS ───────────────────────────────────────────────────
-
+        // ── Refresh públicos ──────────────────────────────────────────────────
         public void RefrescarListadoClientes()
         {
             if (formularioActivo is FrmListadoClientes)
@@ -180,35 +270,6 @@ namespace CapaPresentacion
         {
             if (formularioActivo is FrmListadoProductos)
                 ((FrmListadoProductos)formularioActivo).Mostrar();
-        }
-
-        // ► AGREGADO: Configurar permisos del módulo Caja de forma centralizada
-        private void ConfigurarPermisosCaja(string rol, bool esAdmin)
-        {
-            bool puedeVerVentas    = esAdmin || TryVer(rol, "Ventas");
-            bool puedeVerCompras   = esAdmin || TryVer(rol, "Compras");
-            bool puedeVerPagos     = esAdmin || TryVer(rol, "Pagos"); // o "Historial de Caja" según tu BD
-
-            if (btnVentas    != null) btnVentas.Visible    = puedeVerVentas;
-            if (btnCompras   != null) btnCompras.Visible   = puedeVerCompras;
-            if (btnPagos     != null) btnPagos.Visible     = puedeVerPagos;
-
-            panelCaja.Visible = (btnVentas.Visible || btnCompras.Visible || btnPagos.Visible);
-        }
-
-        // ► AGREGADO: Refrescar módulo Caja (ej. después de confirmar una venta)
-        public void RefrescarModuloCaja()
-        {
-            try
-            {
-                // Si FrmListadoProductos está embebido en panelContenedor, refrescarlo
-                var frmProd = panelContenedor.Controls.OfType<FrmListadoProductos>().FirstOrDefault();
-                if (frmProd != null)
-                {
-                    frmProd.Mostrar();
-                }
-            }
-            catch { /* silencioso para no romper el flujo del menú */ }
         }
     }
 }

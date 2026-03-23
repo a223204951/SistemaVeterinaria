@@ -204,6 +204,14 @@ namespace CapaNegocio
         }
 
         /// <summary>
+        /// Busca productos por proveedor — filtra con SP sp_buscar_productos_por_proveedor.
+        /// </summary>
+        public static DataTable BuscarProductoPorProveedor(int idproveedor, string buscar)
+        {
+            return objDato.ObtenerProductosPorProveedor(idproveedor, buscar ?? "");
+        }
+
+        /// <summary>
         /// Historial de movimientos de stock.
         /// </summary>
         public static DataTable ListarMovimientos(DateTime fechaInicio, DateTime fechaFin, string tipo = "TODOS")

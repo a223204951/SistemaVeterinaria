@@ -137,6 +137,25 @@ namespace CapaDatos
             return dt;
         }
 
+        // ── Buscar productos por proveedor ───────────────────────────────────
+        public DataTable ObtenerProductosPorProveedor(int idproveedor, string buscar)
+        {
+            DataTable dt = new DataTable("Productos");
+            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
+            {
+                try
+                {
+                    SqlCommand cmd = new SqlCommand("dbo.sp_buscar_productos_por_proveedor", con);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@idproveedor", idproveedor);
+                    cmd.Parameters.AddWithValue("@buscar", buscar);
+                    new SqlDataAdapter(cmd).Fill(dt);
+                }
+                catch { }
+            }
+            return dt;
+        }
+
         // ── Listar movimientos de stock ───────────────────────────────────────
         public DataTable ListarMovimientos(DateTime fechaInicio, DateTime fechaFin, string tipo)
         {
