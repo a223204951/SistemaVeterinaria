@@ -34,7 +34,11 @@ namespace CapaPresentacion
             try
             {
                 DataTable dt = CN_Proveedor.HistorialCompras(_idProveedor);
-                dgvHistorial.DataSource = dt;
+
+                // Garantizar orden por fecha descendente en C# (más reciente primero)
+                dt.DefaultView.Sort = "idcompra DESC";
+                dgvHistorial.DataSource = dt.DefaultView.ToTable();
+
                 ConfigurarColumnas();
                 CalcularResumen(dt);
             }
@@ -49,8 +53,17 @@ namespace CapaPresentacion
         {
             if (dgvHistorial.Columns.Count == 0) return;
 
-            if (dgvHistorial.Columns.Contains("idcompra")) { dgvHistorial.Columns["idcompra"].HeaderText = "# Compra"; dgvHistorial.Columns["idcompra"].Width = 80; }
-            if (dgvHistorial.Columns.Contains("fecha")) { dgvHistorial.Columns["fecha"].HeaderText = "Fecha"; dgvHistorial.Columns["fecha"].DefaultCellStyle.Format = "dd/MM/yyyy HH:mm"; }
+            if (dgvHistorial.Columns.Contains("idcompra"))
+            {
+                dgvHistorial.Columns["idcompra"].HeaderText = "# Compra";
+                dgvHistorial.Columns["idcompra"].Width = 80;
+                dgvHistorial.Columns["idcompra"].HeaderCell.SortGlyphDirection = SortOrder.Descending;
+            }
+            if (dgvHistorial.Columns.Contains("fecha"))
+            {
+                dgvHistorial.Columns["fecha"].HeaderText = "Fecha";
+                dgvHistorial.Columns["fecha"].DefaultCellStyle.Format = "dd/MM/yyyy HH:mm";
+            }
             if (dgvHistorial.Columns.Contains("comprador")) dgvHistorial.Columns["comprador"].HeaderText = "Registró";
             if (dgvHistorial.Columns.Contains("subtotal")) { dgvHistorial.Columns["subtotal"].HeaderText = "Subtotal"; dgvHistorial.Columns["subtotal"].DefaultCellStyle.Format = "C2"; }
             if (dgvHistorial.Columns.Contains("iva")) { dgvHistorial.Columns["iva"].HeaderText = "IVA"; dgvHistorial.Columns["iva"].DefaultCellStyle.Format = "C2"; }

@@ -6,14 +6,27 @@ namespace CapaDatos
 {
     /// <summary>
     /// CAPA DE DATOS - MÓDULO DE COMPRAS
-    /// Maneja la cabecera, detalle y confirmación de compras a proveedores
     /// </summary>
     public class CD_Compra
     {
-        // ── Propiedades ───────────────────────────────────────────────────────
         public int Idcompra { get; set; }
         public int Idproveedor { get; set; }
         public string Usuario { get; set; }
+
+        // ── Resolver idusuario desde nombre de usuario ────────────────────────
+        private int ResolverIdUsuario(SqlConnection con, string usuario)
+        {
+            try
+            {
+                SqlCommand cmd = new SqlCommand(
+                    "SELECT idusuario FROM usuario WHERE usuario = @usuario AND estado = 'ACTIVO'",
+                    con);
+                cmd.Parameters.AddWithValue("@usuario", usuario);
+                object res = cmd.ExecuteScalar();
+                return res != null ? Convert.ToInt32(res) : -1;
+            }
+            catch { return -1; }
+        }
 
         // ── Crear cabecera de compra ──────────────────────────────────────────
         public int CrearCompra(CD_Compra compra)
@@ -23,11 +36,14 @@ namespace CapaDatos
                 try
                 {
                     con.Open();
+                    // El SP espera @idusuario INT, no un string
+                    int idusuario = ResolverIdUsuario(con, compra.Usuario);
+                    if (idusuario <= 0) return -1;
+
                     SqlCommand cmd = new SqlCommand("dbo.sp_insert_compra_caja", con);
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@idproveedor", compra.Idproveedor);
-                    cmd.Parameters.AddWithValue("@usuario", compra.Usuario);
-
+                    cmd.Parameters.AddWithValue("@idusuario", idusuario);
                     object res = cmd.ExecuteScalar();
                     return res != null ? Convert.ToInt32(res) : -1;
                 }
@@ -49,7 +65,6 @@ namespace CapaDatos
                     cmd.Parameters.AddWithValue("@idproducto", idproducto);
                     cmd.Parameters.AddWithValue("@cantidad", cantidad);
                     cmd.Parameters.AddWithValue("@precio_unit", precioUnit);
-
                     object res = cmd.ExecuteScalar();
                     return res != null ? res.ToString() : "Error al agregar producto";
                 }
@@ -68,7 +83,6 @@ namespace CapaDatos
                     SqlCommand cmd = new SqlCommand("dbo.sp_confirmar_compra", con);
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@idcompra", idcompra);
-
                     object res = cmd.ExecuteScalar();
                     return res != null ? res.ToString() : "Error al confirmar compra";
                 }
@@ -137,7 +151,7 @@ namespace CapaDatos
             return dt;
         }
 
-        // ── Buscar productos por proveedor ───────────────────────────────────
+        // ── Buscar productos por proveedor ────────────────────────────────────
         public DataTable ObtenerProductosPorProveedor(int idproveedor, string buscar)
         {
             DataTable dt = new DataTable("Productos");

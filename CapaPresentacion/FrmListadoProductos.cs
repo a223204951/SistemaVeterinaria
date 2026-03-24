@@ -30,7 +30,6 @@ namespace CapaPresentacion
             CargarCategorias();
             VerificarAlertas();
 
-            // Registrar eventos del tooltip de código de barras
             dgvProductos.CellMouseEnter += dgvProductos_CellMouseEnter;
             dgvProductos.CellMouseLeave += dgvProductos_CellMouseLeave;
         }
@@ -51,7 +50,7 @@ namespace CapaPresentacion
             btnEliminar.Visible = puedeEliminar;
 
             btnHistorialPrecios.Visible = (rol == "ADMINISTRADOR" || rol == "CAJERO");
-            btnEtiqueta.Visible = true; // visible para todos los roles
+            btnEtiqueta.Visible = true;
 
             if (!puedeEditar && !puedeEliminar)
                 dgvProductos.ReadOnly = true;
@@ -83,14 +82,12 @@ namespace CapaPresentacion
         {
             if (dgvProductos.Columns.Count == 0) return;
 
-            // ── Ocultar ───────────────────────────────────────────────────────
             string[] ocultas = { "precio_base", "precio_minimo", "total_vendido",
                                   "fecha_ultimo_ajuste", "fecha_creacion", "idcategoria", "idproveedor" };
             foreach (string col in ocultas)
                 if (dgvProductos.Columns.Contains(col))
                     dgvProductos.Columns[col].Visible = false;
 
-            // ── Encabezados ───────────────────────────────────────────────────
             if (dgvProductos.Columns.Contains("idproducto")) dgvProductos.Columns["idproducto"].HeaderText = "ID";
             if (dgvProductos.Columns.Contains("nombre")) dgvProductos.Columns["nombre"].HeaderText = "Nombre";
             if (dgvProductos.Columns.Contains("descripcion")) dgvProductos.Columns["descripcion"].HeaderText = "Descripción";
@@ -125,7 +122,6 @@ namespace CapaPresentacion
                 dgvProductos.Columns["proveedor"].Width = 140;
             }
 
-            // ── Anchos ────────────────────────────────────────────────────────
             if (dgvProductos.Columns.Contains("idproducto")) dgvProductos.Columns["idproducto"].Width = 50;
             if (dgvProductos.Columns.Contains("precio")) dgvProductos.Columns["precio"].Width = 100;
             if (dgvProductos.Columns.Contains("stock")) dgvProductos.Columns["stock"].Width = 70;
@@ -219,25 +215,47 @@ namespace CapaPresentacion
             }
         }
 
+        // Las alertas son solo informativas aquí.
+        // El click para crear la compra automática vive en FrmMenuPrincipal.
         private void VerificarAlertas()
         {
             DataTable stockBajo = CN_Producto.ObtenerProductosStockBajo();
             if (stockBajo != null && stockBajo.Rows.Count > 0)
             {
-                lblAlertaStock.Text = $"⚠️ {stockBajo.Rows.Count} producto(s) con stock bajo";
+                lblAlertaStock.Text =
+                    $"⚠️ {stockBajo.Rows.Count} producto(s) con stock bajo — clic para reponer";
                 lblAlertaStock.ForeColor = Color.FromArgb(230, 126, 34);
+                lblAlertaStock.Cursor = Cursors.Hand;
                 lblAlertaStock.Visible = true;
+
+                // Suscribir solo una vez
+                lblAlertaStock.Click -= lblAlertaStock_Click;
+                lblAlertaStock.Click += lblAlertaStock_Click;
             }
-            else lblAlertaStock.Visible = false;
+            else
+            {
+                lblAlertaStock.Visible = false;
+                lblAlertaStock.Click -= lblAlertaStock_Click;
+            }
 
             DataTable proxVencer = CN_Producto.ObtenerProductosProximosVencer();
             if (proxVencer != null && proxVencer.Rows.Count > 0)
             {
-                lblAlertaVencimiento.Text = $"⚠️ {proxVencer.Rows.Count} producto(s) próximo(s) a vencer";
+                lblAlertaVencimiento.Text =
+                    $"⚠️ {proxVencer.Rows.Count} producto(s) próximo(s) a vencer";
                 lblAlertaVencimiento.ForeColor = Color.FromArgb(231, 76, 60);
                 lblAlertaVencimiento.Visible = true;
             }
-            else lblAlertaVencimiento.Visible = false;
+            else
+                lblAlertaVencimiento.Visible = false;
+        }
+
+        private void lblAlertaStock_Click(object sender, EventArgs e)
+        {
+            // Subir al FrmMenuPrincipal y disparar el flujo de restock
+            FrmMenuPrincipal menu = this.ParentForm as FrmMenuPrincipal;
+            if (menu != null)
+                menu.IrARestock();
         }
 
         // =====================================================================
@@ -313,8 +331,10 @@ namespace CapaPresentacion
 
             if (!EAN13Util.EsValido(codigo)) return;
 
-            Rectangle cellRect = dgvProductos.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
-            Point screenPos = dgvProductos.PointToScreen(new Point(cellRect.Right + 5, cellRect.Top));
+            Rectangle cellRect = dgvProductos.GetCellDisplayRectangle(
+                e.ColumnIndex, e.RowIndex, true);
+            Point screenPos = dgvProductos.PointToScreen(
+                new Point(cellRect.Right + 5, cellRect.Top));
 
             _popupBarcode = new Form
             {
@@ -363,10 +383,7 @@ namespace CapaPresentacion
                     "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
-            FrmRegistrarProducto form = new FrmRegistrarProducto();
-            form.Insert = true;
-
+            FrmRegistrarProducto form = new FrmRegistrarProducto { Insert = true };
             if (form.ShowDialog() == DialogResult.OK)
             {
                 Mostrar();
@@ -382,7 +399,6 @@ namespace CapaPresentacion
                     "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             if (dgvProductos.SelectedRows.Count == 0)
             {
                 MessageBox.Show("Seleccione un producto para editar",
@@ -390,10 +406,9 @@ namespace CapaPresentacion
                 return;
             }
 
-            FrmRegistrarProducto form = new FrmRegistrarProducto();
-            form.Edit = true;
-
+            FrmRegistrarProducto form = new FrmRegistrarProducto { Edit = true };
             DataGridViewRow row = dgvProductos.CurrentRow;
+
             form.txtIdProducto.Text = row.Cells["idproducto"].Value.ToString();
             form.txtNombre.Text = row.Cells["nombre"].Value.ToString();
             form.txtDescripcion.Text = row.Cells["descripcion"].Value.ToString();
@@ -412,14 +427,14 @@ namespace CapaPresentacion
                 form.dtpVencimiento.Enabled = true;
             }
 
-            // Pasar código de barras al formulario de edición
             int idprod = Convert.ToInt32(row.Cells["idproducto"].Value);
             string codigo = dgvProductos.Columns.Contains("codigo_barras")
-                ? row.Cells["codigo_barras"].Value?.ToString() ?? ""
-                : "";
+                ? row.Cells["codigo_barras"].Value?.ToString() ?? "" : "";
             form.SetCodigoBarras(codigo, idprod);
-            // Pasar proveedor si la columna existe
-            if (dgvProductos.Columns.Contains("idproveedor") && row.Cells["idproveedor"].Value != DBNull.Value && row.Cells["idproveedor"].Value != null)
+
+            if (dgvProductos.Columns.Contains("idproveedor") &&
+                row.Cells["idproveedor"].Value != DBNull.Value &&
+                row.Cells["idproveedor"].Value != null)
                 form.IdProveedorSeleccionado = Convert.ToInt32(row.Cells["idproveedor"].Value);
 
             if (form.ShowDialog() == DialogResult.OK)
@@ -437,7 +452,6 @@ namespace CapaPresentacion
                     "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             if (dgvProductos.SelectedRows.Count == 0)
             {
                 MessageBox.Show("Seleccione un producto para eliminar",
@@ -446,17 +460,17 @@ namespace CapaPresentacion
             }
 
             string nombre = dgvProductos.CurrentRow.Cells["nombre"].Value.ToString();
-
             if (MessageBox.Show(
-                    $"¿Desactivar el producto?\n\nProducto: {nombre}\n\nEl producto quedará INACTIVO y no aparecerá en ventas.",
+                    $"¿Desactivar el producto?\n\nProducto: {nombre}\n\n" +
+                    "El producto quedará INACTIVO y no aparecerá en ventas.",
                     "Sistema Veterinaria", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
                 == DialogResult.Yes)
             {
                 try
                 {
-                    int idproducto = Convert.ToInt32(dgvProductos.CurrentRow.Cells["idproducto"].Value);
+                    int idproducto = Convert.ToInt32(
+                        dgvProductos.CurrentRow.Cells["idproducto"].Value);
                     string resultado = CN_Producto.Eliminar(idproducto);
-
                     if (resultado == "OK")
                     {
                         MessageBox.Show("✅ Producto desactivado correctamente",
@@ -484,14 +498,13 @@ namespace CapaPresentacion
                     "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
-            int idproducto = Convert.ToInt32(dgvProductos.CurrentRow.Cells["idproducto"].Value);
+            int idproducto = Convert.ToInt32(
+                dgvProductos.CurrentRow.Cells["idproducto"].Value);
             string nombreProducto = dgvProductos.CurrentRow.Cells["nombre"].Value.ToString();
             FrmHistorialPrecios form = new FrmHistorialPrecios(idproducto, nombreProducto);
             form.ShowDialog();
         }
 
-        // ── Botón Etiqueta ────────────────────────────────────────────────────
         private void btnEtiqueta_Click(object sender, EventArgs e)
         {
             if (dgvProductos.SelectedRows.Count == 0)
@@ -500,7 +513,6 @@ namespace CapaPresentacion
                     "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             DataGridViewRow row = dgvProductos.CurrentRow;
             int idproducto = Convert.ToInt32(row.Cells["idproducto"].Value);
             string nombre = row.Cells["nombre"].Value.ToString();

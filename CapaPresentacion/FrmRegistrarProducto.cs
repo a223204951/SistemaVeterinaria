@@ -191,9 +191,17 @@ namespace CapaPresentacion
 
                 if (Insert)
                 {
+                    // Leer proveedor seleccionado (0 = sin proveedor)
+                    int? idprov = null;
+                    if (cmbProveedor.SelectedValue != null)
+                    {
+                        int sel = Convert.ToInt32(cmbProveedor.SelectedValue);
+                        if (sel > 0) idprov = sel;
+                    }
+
                     // CN_Producto.Guardar genera el EAN-13 automáticamente
                     string resultado = CN_Producto.Guardar(nombre, descripcion, precio,
-                        stock, estado, idcategoria, esMedicamento, fechaVencimiento);
+                        stock, estado, idcategoria, esMedicamento, fechaVencimiento, idprov);
 
                     if (resultado == "OK")
                     {
@@ -233,8 +241,17 @@ namespace CapaPresentacion
                 else if (Edit)
                 {
                     int idproducto = Convert.ToInt32(txtIdProducto.Text);
+
+                    // Leer proveedor seleccionado (0 = sin proveedor → null)
+                    int? idprov = null;
+                    if (cmbProveedor.SelectedValue != null)
+                    {
+                        int sel = Convert.ToInt32(cmbProveedor.SelectedValue);
+                        if (sel > 0) idprov = sel;
+                    }
+
                     string resultado = CN_Producto.Editar(idproducto, nombre, descripcion,
-                        precio, stock, estado, idcategoria, esMedicamento, fechaVencimiento);
+                        precio, stock, estado, idcategoria, esMedicamento, fechaVencimiento, idprov);
 
                     if (resultado == "OK")
                     {
