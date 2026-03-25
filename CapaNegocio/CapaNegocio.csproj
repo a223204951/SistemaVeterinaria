@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CN_Auditoria.cs" />
+    <Compile Include="CN_Empleado.cs" />
     <Compile Include="CN_Venta.cs" />
     <Compile Include="CN_Categoria.cs" />
     <Compile Include="CN_Cliente.cs" />

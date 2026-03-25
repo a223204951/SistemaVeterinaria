@@ -317,8 +317,7 @@ namespace CapaPresentacion
             => AbrirFormularioHijo(new FrmListadoMascotas());
 
         private void btnEmpleados_Click(object sender, EventArgs e)
-            => MessageBox.Show("Módulo de Empleados en desarrollo",
-                "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            => AbrirFormularioHijo(new FrmListadoEmpleados());
 
         private void btnProductos_Click(object sender, EventArgs e)
             => AbrirFormularioHijo(new FrmListadoProductos());
@@ -429,6 +428,11 @@ namespace CapaPresentacion
         {
             if (formularioActivo is FrmListadoProductos)
                 ((FrmListadoProductos)formularioActivo).Mostrar();
+        }
+        public void RefrescarListadoEmpleados()
+        {
+            if (formularioActivo is FrmListadoEmpleados)
+                ((FrmListadoEmpleados)formularioActivo).Mostrar();
         }
     }
 }

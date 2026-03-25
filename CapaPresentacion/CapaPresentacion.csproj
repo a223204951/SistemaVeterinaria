@@ -91,6 +91,12 @@
     <Compile Include="FrmListadoClientes.Designer.cs">
       <DependentUpon>FrmListadoClientes.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmListadoEmpleados.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmListadoEmpleados.Designer.cs">
+      <DependentUpon>FrmListadoEmpleados.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmListadoMascotas.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -132,6 +138,12 @@
     </Compile>
     <Compile Include="FrmRegistrarCliente.Designer.cs">
       <DependentUpon>FrmRegistrarCliente.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmRegistrarEmpleado.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmRegistrarEmpleado.Designer.cs">
+      <DependentUpon>FrmRegistrarEmpleado.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmRegistrarMascota.cs">
       <SubType>Form</SubType>
