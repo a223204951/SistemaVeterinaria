@@ -18,11 +18,8 @@ namespace CapaPresentacion
 
         private void InitializeComponent()
         {
-            // ── Controles ─────────────────────────────────────────────────────
             this.lblTitulo = new Label();
             this.txtIdEmpleado = new TextBox();
-
-            // Datos personales
             this.lblNombre = new Label();
             this.txtNombre = new TextBox();
             this.lblApellidos = new Label();
@@ -33,23 +30,17 @@ namespace CapaPresentacion
             this.txtDireccion = new TextBox();
             this.lblCorreo = new Label();
             this.txtCorreo = new TextBox();
-
-            // Tipo y estado
             this.lblTipo = new Label();
             this.cmbTipo = new ComboBox();
             this.lblEstado = new Label();
             this.rbtnActivo = new RadioButton();
             this.rbtnInactivo = new RadioButton();
-
-            // Panel exclusivo de veterinario (cédula + especialidad)
             this.panelVeterinario = new Panel();
             this.lblCedulaReq = new Label();
             this.lblCedula = new Label();
             this.txtCedula = new TextBox();
             this.lblEspecialidad = new Label();
             this.txtEspecialidad = new TextBox();
-
-            // Botones
             this.btnGuardar = new Button();
             this.btnCancelar = new Button();
 
@@ -68,10 +59,9 @@ namespace CapaPresentacion
             this.txtIdEmpleado.Visible = false;
 
             // ────────────────────────────────────────────────────────────────
-            // COLUMNA IZQUIERDA (x=20)
+            // COLUMNA IZQUIERDA  x=20
             // ────────────────────────────────────────────────────────────────
 
-            // Nombre
             this.lblNombre.Text = "Nombre *";
             this.lblNombre.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             this.lblNombre.ForeColor = Color.FromArgb(52, 73, 94);
@@ -83,7 +73,6 @@ namespace CapaPresentacion
             this.txtNombre.Size = new Size(265, 28);
             this.txtNombre.MaxLength = 30;
 
-            // Apellidos
             this.lblApellidos.Text = "Apellidos *";
             this.lblApellidos.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             this.lblApellidos.ForeColor = Color.FromArgb(52, 73, 94);
@@ -95,7 +84,6 @@ namespace CapaPresentacion
             this.txtApellidos.Size = new Size(265, 28);
             this.txtApellidos.MaxLength = 50;
 
-            // Teléfono
             this.lblTelefono.Text = "Teléfono";
             this.lblTelefono.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             this.lblTelefono.ForeColor = Color.FromArgb(52, 73, 94);
@@ -107,7 +95,6 @@ namespace CapaPresentacion
             this.txtTelefono.Size = new Size(265, 28);
             this.txtTelefono.MaxLength = 15;
 
-            // Dirección
             this.lblDireccion.Text = "Dirección";
             this.lblDireccion.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             this.lblDireccion.ForeColor = Color.FromArgb(52, 73, 94);
@@ -119,7 +106,6 @@ namespace CapaPresentacion
             this.txtDireccion.Size = new Size(265, 28);
             this.txtDireccion.MaxLength = 50;
 
-            // Correo
             this.lblCorreo.Text = "Correo electrónico";
             this.lblCorreo.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             this.lblCorreo.ForeColor = Color.FromArgb(52, 73, 94);
@@ -132,10 +118,9 @@ namespace CapaPresentacion
             this.txtCorreo.MaxLength = 50;
 
             // ────────────────────────────────────────────────────────────────
-            // COLUMNA DERECHA (x=310)
+            // COLUMNA DERECHA  x=310
             // ────────────────────────────────────────────────────────────────
 
-            // Tipo de empleado
             this.lblTipo.Text = "Tipo de Empleado *";
             this.lblTipo.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             this.lblTipo.ForeColor = Color.FromArgb(52, 73, 94);
@@ -148,9 +133,9 @@ namespace CapaPresentacion
             this.cmbTipo.Size = new Size(265, 30);
             this.cmbTipo.Items.AddRange(new object[] {
                 "VETERINARIO", "CAJERO", "ASISTENTE", "ADMINISTRADOR" });
-            this.cmbTipo.SelectedIndexChanged += new System.EventHandler(this.cmbTipo_SelectedIndexChanged);
+            this.cmbTipo.SelectedIndexChanged +=
+                new System.EventHandler(this.cmbTipo_SelectedIndexChanged);
 
-            // Estado
             this.lblEstado.Text = "Estado *";
             this.lblEstado.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             this.lblEstado.ForeColor = Color.FromArgb(52, 73, 94);
@@ -172,18 +157,18 @@ namespace CapaPresentacion
             this.rbtnInactivo.AutoSize = true;
             this.rbtnInactivo.Cursor = Cursors.Hand;
 
-            // Panel veterinario (cédula + especialidad)
-            // Se muestra SOLO cuando tipo = VETERINARIO
+            // ── panelVeterinario (cédula + especialidad) ──────────────────────
+            // Visible solo cuando tipo = VETERINARIO
             this.panelVeterinario.BackColor = Color.FromArgb(232, 248, 245);
             this.panelVeterinario.BorderStyle = BorderStyle.FixedSingle;
             this.panelVeterinario.Location = new Point(310, 195);
-            this.panelVeterinario.Size = new Size(265, 180);
+            this.panelVeterinario.Size = new Size(265, 165);
             this.panelVeterinario.Visible = false;
             this.panelVeterinario.Controls.AddRange(new Control[] {
                 this.lblCedula, this.txtCedula,
                 this.lblEspecialidad, this.txtEspecialidad });
 
-            this.lblCedula.Text = "Cédula Profesional";
+            this.lblCedula.Text = "Cédula Profesional *";
             this.lblCedula.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             this.lblCedula.ForeColor = Color.FromArgb(22, 160, 133);
             this.lblCedula.Location = new Point(10, 10);
@@ -205,19 +190,17 @@ namespace CapaPresentacion
             this.txtEspecialidad.Size = new Size(240, 28);
             this.txtEspecialidad.MaxLength = 50;
 
-            // lblCedulaReq — indicador de campo requerido para veterinarios (fuera del panel)
-            this.lblCedulaReq.Text = "⚕️ Complete cédula y especialidad para veterinarios";
+            // lblCedulaReq — aviso fuera del panel (debajo de él)
+            this.lblCedulaReq.Text = "⚕️ Cédula y especialidad requeridas para veterinarios";
             this.lblCedulaReq.Font = new Font("Segoe UI", 8F, FontStyle.Italic);
             this.lblCedulaReq.ForeColor = Color.FromArgb(22, 160, 133);
-            this.lblCedulaReq.Location = new Point(310, 383);
-            this.lblCedulaReq.Size = new Size(265, 20);
+            this.lblCedulaReq.Location = new Point(310, 368);
+            this.lblCedulaReq.Size = new Size(265, 18);
             this.lblCedulaReq.Visible = false;
 
-            // ────────────────────────────────────────────────────────────────
-            // BOTONES
-            // ────────────────────────────────────────────────────────────────
+            // ── Botones ───────────────────────────────────────────────────────
             this.btnGuardar.Text = "💾 Guardar";
-            this.btnGuardar.Location = new Point(310, 415);
+            this.btnGuardar.Location = new Point(310, 400);
             this.btnGuardar.Size = new Size(125, 42);
             this.btnGuardar.BackColor = Color.FromArgb(46, 204, 113);
             this.btnGuardar.ForeColor = Color.White;
@@ -228,7 +211,7 @@ namespace CapaPresentacion
             this.btnGuardar.Click += new System.EventHandler(this.btnGuardar_Click);
 
             this.btnCancelar.Text = "✗ Cancelar";
-            this.btnCancelar.Location = new Point(445, 415);
+            this.btnCancelar.Location = new Point(445, 400);
             this.btnCancelar.Size = new Size(130, 42);
             this.btnCancelar.BackColor = Color.FromArgb(231, 76, 60);
             this.btnCancelar.ForeColor = Color.White;
@@ -238,13 +221,11 @@ namespace CapaPresentacion
             this.btnCancelar.Cursor = Cursors.Hand;
             this.btnCancelar.Click += new System.EventHandler(this.btnCancelar_Click);
 
-            // ────────────────────────────────────────────────────────────────
-            // FORMULARIO
-            // ────────────────────────────────────────────────────────────────
+            // ── FrmRegistrarEmpleado ──────────────────────────────────────────
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = Color.FromArgb(236, 240, 241);
-            this.ClientSize = new Size(600, 478);
+            this.ClientSize = new Size(600, 460);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.StartPosition = FormStartPosition.CenterParent;
             this.MaximizeBox = false;
@@ -253,19 +234,16 @@ namespace CapaPresentacion
             this.Text = "Empleado";
             this.Controls.AddRange(new Control[] {
                 this.lblTitulo, this.txtIdEmpleado,
-                // Columna izquierda
                 this.lblNombre,    this.txtNombre,
                 this.lblApellidos, this.txtApellidos,
                 this.lblTelefono,  this.txtTelefono,
                 this.lblDireccion, this.txtDireccion,
                 this.lblCorreo,    this.txtCorreo,
-                // Columna derecha
                 this.lblTipo,      this.cmbTipo,
                 this.lblEstado,    this.rbtnActivo, this.rbtnInactivo,
                 this.panelVeterinario,
                 this.lblCedulaReq,
-                // Botones
-                this.btnGuardar, this.btnCancelar
+                this.btnGuardar,   this.btnCancelar
             });
             this.Load += new System.EventHandler(this.FrmRegistrarEmpleado_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FrmRegistrarEmpleado_KeyDown);
@@ -278,7 +256,6 @@ namespace CapaPresentacion
 
         #endregion
 
-        // ── Declaraciones ────────────────────────────────────────────────────
         private Label lblTitulo;
         public TextBox txtIdEmpleado;
         private Label lblNombre;

@@ -26,7 +26,6 @@ namespace CapaNegocio
             string direccion, string correo, string estado, string tipoEmpleado,
             string cedulaProfesional, string especialidad)
         {
-            // Validaciones obligatorias
             if (string.IsNullOrWhiteSpace(nombre))
                 return "El nombre es obligatorio";
 
@@ -42,11 +41,10 @@ namespace CapaNegocio
             if (string.IsNullOrWhiteSpace(tipoEmpleado))
                 return "El tipo de empleado es obligatorio";
 
-            // Validar correo si se proporcionó
             if (!string.IsNullOrWhiteSpace(correo) && !correo.Contains("@"))
                 return "El correo electrónico no es válido";
 
-            // Validar que los veterinarios tengan cédula
+            // Los veterinarios deben tener cédula profesional
             if (tipoEmpleado == "VETERINARIO" && string.IsNullOrWhiteSpace(cedulaProfesional))
                 return "Los veterinarios deben tener cédula profesional";
 
@@ -123,14 +121,10 @@ namespace CapaNegocio
 
         // ── Búsqueda por nombre / apellidos ───────────────────────────────────
         public static DataTable BuscarNombre(string texto)
-        {
-            return objDato.BuscarNombre(new CD_Empleado { Buscar = texto });
-        }
+            => objDato.BuscarNombre(new CD_Empleado { Buscar = texto });
 
         // ── Búsqueda por ID ───────────────────────────────────────────────────
         public static DataTable BuscarId(string id)
-        {
-            return objDato.BuscarId(new CD_Empleado { Buscar = id });
-        }
+            => objDato.BuscarId(new CD_Empleado { Buscar = id });
     }
 }

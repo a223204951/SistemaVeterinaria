@@ -9,11 +9,11 @@ namespace CapaPresentacion
     /// FORMULARIO — REGISTRAR / EDITAR EMPLEADO
     /// Campos: nombre, apellidos, teléfono, dirección, correo,
     ///         tipo de empleado, cédula profesional, especialidad, estado.
+    /// El panel de cédula+especialidad solo es visible para VETERINARIO.
     /// Sigue el patrón visual de FrmRegistrarProveedor / FrmRegistrarCliente.
     /// </summary>
     public partial class FrmRegistrarEmpleado : Form
     {
-        // ── Flags de operación ────────────────────────────────────────────────
         public bool Insert = false;
         public bool Edit = false;
 
@@ -29,21 +29,19 @@ namespace CapaPresentacion
             {
                 lblTitulo.Text = "➕ Registrar Nuevo Empleado";
                 rbtnActivo.Checked = true;
-                cmbTipo.SelectedIndex = 0;
+                cmbTipo.SelectedIndex = 0; // VETERINARIO por defecto
             }
             else if (Edit)
             {
                 lblTitulo.Text = "✏️ Editar Empleado";
             }
 
-            // El panel de cédula/especialidad solo es relevante para veterinarios
             ActualizarPanelVeterinario();
         }
 
         // ── Método público para que FrmListadoEmpleados establezca el tipo ────
         public void SetTipoEmpleado(string tipo)
         {
-            // El ComboBox muestra los mismos valores que se guardan en BD
             foreach (object item in cmbTipo.Items)
             {
                 if (item.ToString() == tipo)
@@ -52,18 +50,15 @@ namespace CapaPresentacion
                     return;
                 }
             }
-            // Si no lo encuentra, seleccionar el primero
             if (cmbTipo.Items.Count > 0)
                 cmbTipo.SelectedIndex = 0;
         }
 
-        // ── Mostrar/ocultar panel veterinario según tipo ───────────────────────
+        // ── Mostrar/ocultar panel veterinario ─────────────────────────────────
         private void ActualizarPanelVeterinario()
         {
             bool esVet = cmbTipo.SelectedItem?.ToString() == "VETERINARIO";
             panelVeterinario.Visible = esVet;
-
-            // Ajustar label indicador
             lblCedulaReq.Visible = esVet;
         }
 
@@ -73,7 +68,6 @@ namespace CapaPresentacion
         // ── Guardar ───────────────────────────────────────────────────────────
         private void btnGuardar_Click(object sender, EventArgs e)
         {
-            // Validaciones básicas en UI antes de pasar a CN
             if (string.IsNullOrWhiteSpace(txtNombre.Text))
             {
                 MessageBox.Show("⚠️ El nombre es obligatorio.",

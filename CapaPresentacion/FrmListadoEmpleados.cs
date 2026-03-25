@@ -8,13 +8,26 @@ namespace CapaPresentacion
 {
     /// <summary>
     /// FORMULARIO — GESTIÓN DE EMPLEADOS
-    /// Listado principal con búsqueda por nombre/ID, CRUD completo
-    /// y coloreado por tipo de empleado y estado.
-    /// Sigue el patrón visual de FrmListadoClientes / FrmListadoProveedores.
+    ///
+    /// CORRECCIONES v3:
+    /// • Filtro de tipo/estado: comparación case-insensitive con ToUpper() para
+    ///   que funcione con empleados que tengan 'Veterinario', 'VETERINARIO', etc.
+    /// • Búsqueda por ID: usa LIKE (parcial) en vez de igualdad exacta, de modo
+    ///   que al escribir "1" aparecen IDs 1, 10, 11, 12…
+    ///
+    /// • Búsqueda por Nombre/Apellido  ó  por ID  (radio buttons idénticos a
+    ///   FrmListadoClientes / FrmListadoMascotas).
+    /// • Filtros por tipo/estado con CheckBoxes (selección múltiple).
+    ///   Sin ningún CheckBox marcado → se muestran TODOS.
+    /// • Coloreado: verde=veterinario, azul=cajero, naranja=asistente,
+    ///   morado=administrador, gris=inactivo.
     /// </summary>
     public partial class FrmListadoEmpleados : Form
     {
         private CN_Usuario _cnUsuario = new CN_Usuario();
+
+        // Tabla completa desde BD; los filtros actúan sobre ella en memoria
+        private DataTable _tablaMaestra = null;
 
         public FrmListadoEmpleados()
         {
@@ -26,7 +39,8 @@ namespace CapaPresentacion
         {
             this.Top = 0;
             this.Left = 0;
-            Mostrar();
+            CargarDesdeBaseDeDatos();
+            AplicarFiltros();
             ConfigurarPermisos();
         }
 
@@ -34,9 +48,8 @@ namespace CapaPresentacion
         private void ConfigurarPermisos()
         {
             string rol = FrmLogin.RolActual;
-
-            // Solo ADMINISTRADOR puede crear, editar y eliminar empleados
             bool esAdmin = (rol == "ADMINISTRADOR");
+
             btnNuevo.Visible = esAdmin || TryPerm(rol, "crear");
             btnEditar.Visible = esAdmin || TryPerm(rol, "editar");
             btnEliminar.Visible = esAdmin || TryPerm(rol, "eliminar");
@@ -57,34 +70,110 @@ namespace CapaPresentacion
             catch { return false; }
         }
 
-        // ── Cargar / Mostrar ──────────────────────────────────────────────────
-        public void Mostrar()
+        // ── Carga desde BD ────────────────────────────────────────────────────
+        private void CargarDesdeBaseDeDatos()
         {
             try
             {
-                DataTable datos = CN_Empleado.Listar();
-                dgvEmpleados.DataSource = datos;
-                ConfigurarColumnas();
-                ColorizarFilas();
-                ActualizarContador();
+                _tablaMaestra = CN_Empleado.Listar();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error al cargar empleados: " + ex.Message,
                     "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                _tablaMaestra = new DataTable();
             }
         }
 
+        /// <summary>
+        /// Recarga desde BD y vuelve a aplicar filtros.
+        /// Llamar tras crear / editar / eliminar un empleado.
+        /// </summary>
+        public void Mostrar()
+        {
+            CargarDesdeBaseDeDatos();
+            AplicarFiltros();
+        }
+
+        // ── Motor de filtros ──────────────────────────────────────────────────
+        /// <summary>
+        /// Combina la búsqueda de texto con los CheckBoxes de tipo/estado
+        /// y actualiza el DataGridView sin volver a la BD.
+        ///
+        /// CORRECCIÓN CLAVE: la comparación de tipo_empleado se hace con
+        /// ToUpper() para que funcione con valores 'Veterinario', 'VETERINARIO',
+        /// 'veterinario', etc. (los empleados previos podían tener casing distinto).
+        /// </summary>
+        private void AplicarFiltros()
+        {
+            if (_tablaMaestra == null) return;
+
+            bool ningunCheckbox = !chkVeterinario.Checked && !chkCajero.Checked
+                               && !chkAsistente.Checked && !chkAdministrador.Checked
+                               && !chkInactivo.Checked;
+
+            string texto = txtBuscar.Text.Trim().ToUpper();
+
+            DataTable filtrada = _tablaMaestra.Clone(); // misma estructura, sin filas
+
+            foreach (DataRow row in _tablaMaestra.Rows)
+            {
+                // ── Normalizar tipo y estado a mayúsculas para comparar ────────
+                // Esto resuelve el problema con empleados que tenían 'Veterinario'
+                // en lugar de 'VETERINARIO' porque fueron insertados con SPs viejos.
+                string tipoUpper = (row["tipo_empleado"]?.ToString() ?? "").ToUpper();
+                string estadoUpper = (row["estado"]?.ToString() ?? "").ToUpper();
+
+                // ── Filtro por CheckBox ────────────────────────────────────────
+                bool pasaTipo = ningunCheckbox
+                    || (chkVeterinario.Checked && tipoUpper == "VETERINARIO")
+                    || (chkCajero.Checked && tipoUpper == "CAJERO")
+                    || (chkAsistente.Checked && tipoUpper == "ASISTENTE")
+                    || (chkAdministrador.Checked && tipoUpper == "ADMINISTRADOR")
+                    || (chkInactivo.Checked && estadoUpper == "INACTIVO");
+
+                if (!pasaTipo) continue;
+
+                // ── Filtro por texto de búsqueda ──────────────────────────────
+                bool pasaTexto = true;
+                if (!string.IsNullOrWhiteSpace(texto))
+                {
+                    if (rbtNombre.Checked)
+                    {
+                        // Búsqueda parcial en nombre O apellidos (case-insensitive)
+                        string nombre = (row["nombre"]?.ToString() ?? "").ToUpper();
+                        string apellidos = (row["apellidos"]?.ToString() ?? "").ToUpper();
+                        pasaTexto = nombre.Contains(texto) || apellidos.Contains(texto);
+                    }
+                    else // rbtId — búsqueda PARCIAL: "1" encuentra 1, 10, 11, 12...
+                    {
+                        string id = (row["idempleado"]?.ToString() ?? "");
+                        // StartsWith da mejor UX que Contains para IDs numéricos:
+                        // escribir "1" muestra 1, 10, 11... pero no 21, 31...
+                        // Si prefieren Contains basta con cambiar la siguiente línea.
+                        pasaTexto = id.StartsWith(texto);
+                    }
+                }
+
+                if (pasaTexto)
+                    filtrada.ImportRow(row);
+            }
+
+            dgvEmpleados.DataSource = filtrada;
+            ConfigurarColumnas();
+            ColorizarFilas();
+            ActualizarContador(filtrada.Rows.Count);
+        }
+
+        // ── Columnas ──────────────────────────────────────────────────────────
         private void ConfigurarColumnas()
         {
             if (dgvEmpleados.Columns.Count == 0) return;
 
-            // Ocultar columnas de detalle interno
-            foreach (string col in new[] { "cedula_profesional" })
+            foreach (string col in new[] { "cedula_profesional", "nombre_completo" })
                 if (dgvEmpleados.Columns.Contains(col))
                     dgvEmpleados.Columns[col].Visible = false;
 
-            // Renombrar encabezados
             void R(string c, string h, int w = 0)
             {
                 if (!dgvEmpleados.Columns.Contains(c)) return;
@@ -103,28 +192,29 @@ namespace CapaPresentacion
             R("especialidad", "Especialidad", 140);
         }
 
+        // ── Colorear filas ────────────────────────────────────────────────────
+        // También normaliza con ToUpper() para que el color se aplique
+        // independientemente del casing almacenado en BD.
         private void ColorizarFilas()
         {
             foreach (DataGridViewRow row in dgvEmpleados.Rows)
             {
                 if (row.Cells["estado"].Value == null) continue;
 
-                string estado = row.Cells["estado"].Value.ToString();
-                string tipo = dgvEmpleados.Columns.Contains("tipo_empleado") &&
-                                row.Cells["tipo_empleado"].Value != null
-                                    ? row.Cells["tipo_empleado"].Value.ToString()
-                                    : "";
+                string estadoUpper = row.Cells["estado"].Value.ToString().ToUpper();
+                string tipoUpper = dgvEmpleados.Columns.Contains("tipo_empleado") &&
+                                     row.Cells["tipo_empleado"].Value != null
+                                         ? row.Cells["tipo_empleado"].Value.ToString().ToUpper()
+                                         : "";
 
-                // Inactivos en gris
-                if (estado == "INACTIVO")
+                if (estadoUpper == "INACTIVO")
                 {
                     row.DefaultCellStyle.BackColor = Color.FromArgb(245, 245, 245);
                     row.DefaultCellStyle.ForeColor = Color.FromArgb(149, 165, 166);
                     continue;
                 }
 
-                // Activos: color según tipo
-                switch (tipo)
+                switch (tipoUpper)
                 {
                     case "VETERINARIO":
                         row.DefaultCellStyle.BackColor = Color.FromArgb(232, 248, 245);
@@ -146,42 +236,50 @@ namespace CapaPresentacion
             }
         }
 
-        private void ActualizarContador()
+        private void ActualizarContador(int total)
         {
-            int total = dgvEmpleados.Rows.Count;
             int activos = 0;
             foreach (DataGridViewRow row in dgvEmpleados.Rows)
-                if (row.Cells["estado"].Value?.ToString() == "ACTIVO") activos++;
+                if ((row.Cells["estado"].Value?.ToString() ?? "").ToUpper() == "ACTIVO")
+                    activos++;
 
-            lblTotal.Text = $"Total: {total} empleados | Activos: {activos}";
+            lblTotal.Text = $"Mostrando: {total} empleado(s) | Activos: {activos}";
         }
 
-        // ── Búsqueda en tiempo real ────────────────────────────────────────────
-        private void Buscar()
+        // ── Eventos de búsqueda ───────────────────────────────────────────────
+        private void txtBuscar_TextChanged(object sender, EventArgs e) => AplicarFiltros();
+        private void btnBuscar_Click(object sender, EventArgs e) => AplicarFiltros();
+
+        // ── Eventos de CheckBoxes ─────────────────────────────────────────────
+        private void chkFiltro_CheckedChanged(object sender, EventArgs e) => AplicarFiltros();
+
+        // ── Botón Limpiar ─────────────────────────────────────────────────────
+        private void btnLimpiar_Click(object sender, EventArgs e)
         {
-            try
-            {
-                string texto = txtBuscar.Text.Trim();
-                if (string.IsNullOrWhiteSpace(texto)) { Mostrar(); return; }
+            txtBuscar.Clear();
+            rbtNombre.Checked = true;
 
-                DataTable datos = rbtNombre.Checked
-                    ? CN_Empleado.BuscarNombre(texto)
-                    : CN_Empleado.BuscarId(texto);
+            // Desuscribir temporalmente para hacer una sola llamada a AplicarFiltros
+            chkVeterinario.CheckedChanged -= chkFiltro_CheckedChanged;
+            chkCajero.CheckedChanged -= chkFiltro_CheckedChanged;
+            chkAsistente.CheckedChanged -= chkFiltro_CheckedChanged;
+            chkAdministrador.CheckedChanged -= chkFiltro_CheckedChanged;
+            chkInactivo.CheckedChanged -= chkFiltro_CheckedChanged;
 
-                dgvEmpleados.DataSource = datos;
-                ConfigurarColumnas();
-                ColorizarFilas();
-                ActualizarContador();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error en la búsqueda: " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            chkVeterinario.Checked = false;
+            chkCajero.Checked = false;
+            chkAsistente.Checked = false;
+            chkAdministrador.Checked = false;
+            chkInactivo.Checked = false;
+
+            chkVeterinario.CheckedChanged += chkFiltro_CheckedChanged;
+            chkCajero.CheckedChanged += chkFiltro_CheckedChanged;
+            chkAsistente.CheckedChanged += chkFiltro_CheckedChanged;
+            chkAdministrador.CheckedChanged += chkFiltro_CheckedChanged;
+            chkInactivo.CheckedChanged += chkFiltro_CheckedChanged;
+
+            AplicarFiltros();
         }
-
-        private void txtBuscar_TextChanged(object sender, EventArgs e) => Buscar();
-        private void btnBuscar_Click(object sender, EventArgs e) => Buscar();
 
         // ── CRUD ──────────────────────────────────────────────────────────────
         private void btnNuevo_Click(object sender, EventArgs e)
@@ -210,17 +308,16 @@ namespace CapaPresentacion
             form.txtDireccion.Text = row.Cells["direccion"].Value?.ToString() ?? "";
             form.txtCorreo.Text = row.Cells["correo"].Value?.ToString() ?? "";
             form.txtCedula.Text = dgvEmpleados.Columns.Contains("cedula_profesional")
-                                           ? row.Cells["cedula_profesional"].Value?.ToString() ?? ""
-                                           : "";
+                                            ? row.Cells["cedula_profesional"].Value?.ToString() ?? ""
+                                            : "";
             form.txtEspecialidad.Text = row.Cells["especialidad"].Value?.ToString() ?? "";
 
-            // Estado
             string estado = row.Cells["estado"].Value?.ToString() ?? "ACTIVO";
-            form.rbtnActivo.Checked = (estado == "ACTIVO");
-            form.rbtnInactivo.Checked = (estado != "ACTIVO");
+            form.rbtnActivo.Checked = (estado.ToUpper() == "ACTIVO");
+            form.rbtnInactivo.Checked = (estado.ToUpper() != "ACTIVO");
 
-            // Tipo de empleado
-            string tipo = row.Cells["tipo_empleado"].Value?.ToString() ?? "ASISTENTE";
+            // Normalizar tipo a mayúsculas para que SetTipoEmpleado lo encuentre
+            string tipo = (row.Cells["tipo_empleado"].Value?.ToString() ?? "ASISTENTE").ToUpper();
             form.SetTipoEmpleado(tipo);
 
             if (form.ShowDialog() == DialogResult.OK)
@@ -273,13 +370,6 @@ namespace CapaPresentacion
         {
             if (TryPerm(FrmLogin.RolActual, "editar") || FrmLogin.RolActual == "ADMINISTRADOR")
                 btnEditar_Click(sender, e);
-        }
-
-        private void btnLimpiar_Click(object sender, EventArgs e)
-        {
-            txtBuscar.Clear();
-            rbtNombre.Checked = true;
-            Mostrar();
         }
     }
 }

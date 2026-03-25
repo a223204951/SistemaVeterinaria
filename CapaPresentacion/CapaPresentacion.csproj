@@ -206,6 +206,9 @@
     <EmbeddedResource Include="FrmListadoClientes.resx">
       <DependentUpon>FrmListadoClientes.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="FrmListadoEmpleados.resx">
+      <DependentUpon>FrmListadoEmpleados.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FrmListadoMascotas.resx">
       <DependentUpon>FrmListadoMascotas.cs</DependentUpon>
     </EmbeddedResource>
