@@ -42,7 +42,7 @@ namespace CapaPresentacion
             this.lblTitulo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
             this.lblTitulo.Location = new System.Drawing.Point(20, 20);
             this.lblTitulo.Name = "lblTitulo";
-            this.lblTitulo.Size = new System.Drawing.Size(312, 32);
+            this.lblTitulo.Size = new System.Drawing.Size(277, 32);
             this.lblTitulo.TabIndex = 0;
             this.lblTitulo.Text = "📊 Historial de Precios";
             // 
@@ -50,6 +50,9 @@ namespace CapaPresentacion
             // 
             this.dgvHistorial.AllowUserToAddRows = false;
             this.dgvHistorial.AllowUserToDeleteRows = false;
+            this.dgvHistorial.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvHistorial.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvHistorial.BackgroundColor = System.Drawing.Color.White;
             this.dgvHistorial.BorderStyle = System.Windows.Forms.BorderStyle.None;
@@ -82,8 +85,7 @@ namespace CapaPresentacion
             this.dgvHistorial.RowHeadersWidth = 51;
             this.dgvHistorial.RowTemplate.Height = 35;
             this.dgvHistorial.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvHistorial.Size = new System.Drawing.Size(1150, 400);
-            this.dgvHistorial.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            this.dgvHistorial.Size = new System.Drawing.Size(884, 400);
             this.dgvHistorial.TabIndex = 1;
             // 
             // panelEstadisticas
@@ -91,7 +93,7 @@ namespace CapaPresentacion
             this.panelEstadisticas.BackColor = System.Drawing.Color.White;
             this.panelEstadisticas.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panelEstadisticas.Controls.Add(this.lblEstadisticas);
-            this.panelEstadisticas.Location = new System.Drawing.Point(695, 70);
+            this.panelEstadisticas.Location = new System.Drawing.Point(916, 70);
             this.panelEstadisticas.Name = "panelEstadisticas";
             this.panelEstadisticas.Size = new System.Drawing.Size(260, 400);
             this.panelEstadisticas.TabIndex = 2;
@@ -108,13 +110,14 @@ namespace CapaPresentacion
             // 
             // panelBotones
             // 
+            this.panelBotones.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.panelBotones.Controls.Add(this.lblTotal);
             this.panelBotones.Controls.Add(this.btnExportar);
             this.panelBotones.Controls.Add(this.btnCerrar);
             this.panelBotones.Location = new System.Drawing.Point(26, 480);
             this.panelBotones.Name = "panelBotones";
             this.panelBotones.Size = new System.Drawing.Size(1150, 50);
-            this.panelBotones.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.panelBotones.TabIndex = 3;
             // 
             // lblTotal
@@ -124,7 +127,7 @@ namespace CapaPresentacion
             this.lblTotal.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
             this.lblTotal.Location = new System.Drawing.Point(5, 15);
             this.lblTotal.Name = "lblTotal";
-            this.lblTotal.Size = new System.Drawing.Size(259, 23);
+            this.lblTotal.Size = new System.Drawing.Size(260, 23);
             this.lblTotal.TabIndex = 2;
             this.lblTotal.Text = "Total de cambios registrados: 0";
             // 
@@ -136,7 +139,7 @@ namespace CapaPresentacion
             this.btnExportar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnExportar.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnExportar.ForeColor = System.Drawing.Color.White;
-            this.btnExportar.Location = new System.Drawing.Point(690, 7);
+            this.btnExportar.Location = new System.Drawing.Point(907, 7);
             this.btnExportar.Name = "btnExportar";
             this.btnExportar.Size = new System.Drawing.Size(110, 38);
             this.btnExportar.TabIndex = 1;
@@ -152,7 +155,7 @@ namespace CapaPresentacion
             this.btnCerrar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCerrar.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnCerrar.ForeColor = System.Drawing.Color.White;
-            this.btnCerrar.Location = new System.Drawing.Point(810, 7);
+            this.btnCerrar.Location = new System.Drawing.Point(1027, 7);
             this.btnCerrar.Name = "btnCerrar";
             this.btnCerrar.Size = new System.Drawing.Size(110, 38);
             this.btnCerrar.TabIndex = 0;

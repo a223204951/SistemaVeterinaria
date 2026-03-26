@@ -29,9 +29,9 @@ namespace CapaPresentacion
             this.txtDescripcion = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.txtNombre = new System.Windows.Forms.TextBox();
-            this.btnCancelar = new System.Windows.Forms.Button();
             this.btnGuardar = new System.Windows.Forms.Button();
             this.txtIdCategoria = new System.Windows.Forms.TextBox();
+            this.btnCancelar = new System.Windows.Forms.Button();
             this.panelFormulario.SuspendLayout();
             this.groupBoxEstado.SuspendLayout();
             this.SuspendLayout();
@@ -43,7 +43,7 @@ namespace CapaPresentacion
             this.lblTitulo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
             this.lblTitulo.Location = new System.Drawing.Point(30, 20);
             this.lblTitulo.Name = "lblTitulo";
-            this.lblTitulo.Size = new System.Drawing.Size(267, 37);
+            this.lblTitulo.Size = new System.Drawing.Size(277, 37);
             this.lblTitulo.TabIndex = 0;
             this.lblTitulo.Text = "📝 Nueva Categoría";
             // 
@@ -82,7 +82,7 @@ namespace CapaPresentacion
             this.rbtnInactivo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
             this.rbtnInactivo.Location = new System.Drawing.Point(250, 35);
             this.rbtnInactivo.Name = "rbtnInactivo";
-            this.rbtnInactivo.Size = new System.Drawing.Size(124, 27);
+            this.rbtnInactivo.Size = new System.Drawing.Size(128, 27);
             this.rbtnInactivo.TabIndex = 1;
             this.rbtnInactivo.Text = "✗ INACTIVO";
             this.rbtnInactivo.UseVisualStyleBackColor = true;
@@ -96,7 +96,7 @@ namespace CapaPresentacion
             this.rbtnActivo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(204)))), ((int)(((byte)(113)))));
             this.rbtnActivo.Location = new System.Drawing.Point(30, 35);
             this.rbtnActivo.Name = "rbtnActivo";
-            this.rbtnActivo.Size = new System.Drawing.Size(107, 27);
+            this.rbtnActivo.Size = new System.Drawing.Size(109, 27);
             this.rbtnActivo.TabIndex = 0;
             this.rbtnActivo.TabStop = true;
             this.rbtnActivo.Text = "✓ ACTIVO";
@@ -109,7 +109,7 @@ namespace CapaPresentacion
             this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
             this.label3.Location = new System.Drawing.Point(26, 90);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(109, 23);
+            this.label3.Size = new System.Drawing.Size(108, 23);
             this.label3.TabIndex = 3;
             this.label3.Text = "Descripción:";
             // 
@@ -129,7 +129,7 @@ namespace CapaPresentacion
             this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
             this.label2.Location = new System.Drawing.Point(26, 20);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(90, 23);
+            this.label2.Size = new System.Drawing.Size(94, 23);
             this.label2.TabIndex = 1;
             this.label2.Text = "Nombre: *";
             // 
@@ -141,22 +141,6 @@ namespace CapaPresentacion
             this.txtNombre.Size = new System.Drawing.Size(480, 30);
             this.txtNombre.TabIndex = 0;
             // 
-            // btnCancelar
-            // 
-            this.btnCancelar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(149)))), ((int)(((byte)(165)))), ((int)(((byte)(166)))));
-            this.btnCancelar.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnCancelar.FlatAppearance.BorderSize = 0;
-            this.btnCancelar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCancelar.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnCancelar.ForeColor = System.Drawing.Color.White;
-            this.btnCancelar.Location = new System.Drawing.Point(320, 395);
-            this.btnCancelar.Name = "btnCancelar";
-            this.btnCancelar.Size = new System.Drawing.Size(120, 45);
-            this.btnCancelar.TabIndex = 2;
-            this.btnCancelar.Text = "✗ Cancelar";
-            this.btnCancelar.UseVisualStyleBackColor = false;
-            this.btnCancelar.Click += new System.EventHandler(this.btnCancelar_Click);
-            // 
             // btnGuardar
             // 
             this.btnGuardar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(204)))), ((int)(((byte)(113)))));
@@ -165,7 +149,7 @@ namespace CapaPresentacion
             this.btnGuardar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnGuardar.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnGuardar.ForeColor = System.Drawing.Color.White;
-            this.btnGuardar.Location = new System.Drawing.Point(450, 395);
+            this.btnGuardar.Location = new System.Drawing.Point(324, 395);
             this.btnGuardar.Name = "btnGuardar";
             this.btnGuardar.Size = new System.Drawing.Size(120, 45);
             this.btnGuardar.TabIndex = 3;
@@ -181,15 +165,31 @@ namespace CapaPresentacion
             this.txtIdCategoria.TabIndex = 4;
             this.txtIdCategoria.Visible = false;
             // 
+            // btnCancelar
+            // 
+            this.btnCancelar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            this.btnCancelar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnCancelar.FlatAppearance.BorderSize = 0;
+            this.btnCancelar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCancelar.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnCancelar.ForeColor = System.Drawing.Color.White;
+            this.btnCancelar.Location = new System.Drawing.Point(450, 395);
+            this.btnCancelar.Name = "btnCancelar";
+            this.btnCancelar.Size = new System.Drawing.Size(120, 45);
+            this.btnCancelar.TabIndex = 25;
+            this.btnCancelar.Text = "✗ Cancelar";
+            this.btnCancelar.UseVisualStyleBackColor = false;
+            this.btnCancelar.Click += new System.EventHandler(this.btnCancelar_Click);
+            // 
             // FrmRegistrarCategoria
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(236)))), ((int)(((byte)(240)))), ((int)(((byte)(241)))));
             this.ClientSize = new System.Drawing.Size(600, 460);
+            this.Controls.Add(this.btnCancelar);
             this.Controls.Add(this.txtIdCategoria);
             this.Controls.Add(this.btnGuardar);
-            this.Controls.Add(this.btnCancelar);
             this.Controls.Add(this.panelFormulario);
             this.Controls.Add(this.lblTitulo);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -217,12 +217,12 @@ namespace CapaPresentacion
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.GroupBox groupBoxEstado;
-        private System.Windows.Forms.Button btnCancelar;
         private System.Windows.Forms.Button btnGuardar;
         public System.Windows.Forms.TextBox txtNombre;
         public System.Windows.Forms.TextBox txtDescripcion;
         public System.Windows.Forms.RadioButton rbtnActivo;
         public System.Windows.Forms.RadioButton rbtnInactivo;
         public System.Windows.Forms.TextBox txtIdCategoria;
+        private Button btnCancelar;
     }
 }

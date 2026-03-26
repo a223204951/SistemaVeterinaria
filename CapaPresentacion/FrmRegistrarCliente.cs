@@ -94,7 +94,7 @@ namespace CapaPresentacion
             }
         }
 
-        private void btncancelar_Click(object sender, EventArgs e)
+        private void btnCancelar_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show("¿Cancelar? Los cambios no guardados se perderán.",
                     "Sistema Veterinaria", MessageBoxButtons.YesNo, MessageBoxIcon.Question)

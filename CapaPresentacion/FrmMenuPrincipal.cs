@@ -24,7 +24,6 @@ namespace CapaPresentacion
             ConfigurarPermisosPorRol();
             CargarNotificaciones();
 
-            // Logo/título → volver a la pantalla de inicio con notificaciones
             lblTitulo.Cursor = Cursors.Hand;
             lblTitulo.Click += (s, ev) => MostrarInicio();
         }
@@ -32,10 +31,6 @@ namespace CapaPresentacion
         // ─────────────────────────────────────────────────────────────────────
         // PANTALLA DE INICIO
         // ─────────────────────────────────────────────────────────────────────
-        /// <summary>
-        /// Cierra el formulario embebido activo y muestra la pantalla de inicio
-        /// con el panel de notificaciones. Lo usa el clic en el logo y IrARestock().
-        /// </summary>
         public void MostrarInicio()
         {
             if (formularioActivo != null)
@@ -47,8 +42,6 @@ namespace CapaPresentacion
             panelContenedor.Controls.Clear();
             panelContenedor.Controls.Add(panelInicio);
             panelInicio.BringToFront();
-
-            // Refrescar alertas para que estén al día
             CargarNotificaciones();
         }
 
@@ -66,8 +59,8 @@ namespace CapaPresentacion
             btnProductos.Visible = esAdmin || TryVer(rol, "Productos");
             btnProveedores.Visible = esAdmin || TryVer(rol, "Proveedores");
             panelGestion.Visible = btnClientes.Visible || btnMascotas.Visible ||
-                                   btnEmpleados.Visible || btnProductos.Visible ||
-                                   btnProveedores.Visible;
+                                    btnEmpleados.Visible || btnProductos.Visible ||
+                                    btnProveedores.Visible;
 
             btnCitas.Visible = esAdmin || TryVer(rol, "Citas");
             btnConsultas.Visible = esAdmin || TryVer(rol, "Consultas");
@@ -81,8 +74,11 @@ namespace CapaPresentacion
             btnAuditoria.Visible = esAdmin || TryVer(rol, "Auditoria");
             btnSesiones.Visible = esAdmin || TryVer(rol, "Sesiones");
             btnCategorias.Visible = esAdmin;
-            panelAdministracion.Visible = btnAuditoria.Visible || btnSesiones.Visible ||
-                                          btnCategorias.Visible;
+            btnBackup.Visible = esAdmin; // ← SOLO ADMINISTRADOR
+
+            panelAdministracion.Visible =
+                btnAuditoria.Visible || btnSesiones.Visible ||
+                btnCategorias.Visible || btnBackup.Visible;
         }
 
         private bool TryVer(string rol, string modulo)
@@ -125,7 +121,7 @@ namespace CapaPresentacion
 
                 int y = 5;
 
-                // ── Stock bajo ────────────────────────────────────────────────
+                // ── Stock bajo ─────────────────────────────────────────────────
                 if (stockBajo != null)
                 {
                     foreach (DataRow row in stockBajo.Rows)
@@ -144,7 +140,7 @@ namespace CapaPresentacion
                             AutoSize = false,
                             Size = new Size(panelNotificaciones.Width - 16, 22),
                             Location = new Point(8, y),
-                            Tag = idproducto   // guardamos el idproducto como int
+                            Tag = idproducto
                         };
                         lnk.LinkColor = lnk.ForeColor;
                         lnk.ActiveLinkColor = Color.White;
@@ -156,7 +152,7 @@ namespace CapaPresentacion
                     }
                 }
 
-                // ── Próximos a vencer ─────────────────────────────────────────
+                // ── Próximos a vencer ──────────────────────────────────────────
                 if (proxVencer != null)
                 {
                     foreach (DataRow row in proxVencer.Rows)
@@ -186,21 +182,19 @@ namespace CapaPresentacion
 
                 panelNotificaciones.AutoScrollMinSize = new Size(0, y + 5);
             }
-            catch { /* Silencioso — no bloquear carga del menú */ }
+            catch { }
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // CLICK NOTIFICACIÓN STOCK BAJO → compra embebida y pre-cargada
+        // CLICK NOTIFICACIÓN STOCK BAJO
         // ─────────────────────────────────────────────────────────────────────
         private void NotificacionStockBajo_Click(object sender, LinkLabelLinkClickedEventArgs e)
         {
             try
             {
-                // 1. Obtener todos los productos con stock bajo
                 DataTable todosStockBajo = CN_Producto.ObtenerProductosStockBajo();
                 if (todosStockBajo == null || todosStockBajo.Rows.Count == 0) return;
 
-                // 2. Obtener idproveedor de cada producto desde el listado completo
                 DataTable todosProductos = CN_Producto.Listar();
                 var proveedorDeProducto = new Dictionary<int, int>();
                 foreach (DataRow row in todosProductos.Rows)
@@ -210,7 +204,6 @@ namespace CapaPresentacion
                         Convert.ToInt32(row["idproveedor"]);
                 }
 
-                // 3. Construir tabla solo con los que tienen proveedor
                 DataTable conProveedor = new DataTable();
                 conProveedor.Columns.Add("idproducto", typeof(int));
                 conProveedor.Columns.Add("nombre", typeof(string));
@@ -238,18 +231,17 @@ namespace CapaPresentacion
                     return;
                 }
 
-                // 4. Elegir proveedor principal (el que más productos concentra)
                 var conteo = new Dictionary<int, int>();
                 foreach (DataRow row in conProveedor.Rows)
                 {
                     int idpv = Convert.ToInt32(row["idproveedor"]);
                     conteo[idpv] = conteo.ContainsKey(idpv) ? conteo[idpv] + 1 : 1;
                 }
+
                 int idProvPrincipal = -1, maxCount = 0;
                 foreach (var kvp in conteo)
                     if (kvp.Value > maxCount) { maxCount = kvp.Value; idProvPrincipal = kvp.Key; }
 
-                // 5. Filtrar solo los de ese proveedor
                 DataTable productosParaCompra = conProveedor.Clone();
                 foreach (DataRow row in conProveedor.Rows)
                     if (Convert.ToInt32(row["idproveedor"]) == idProvPrincipal)
@@ -260,20 +252,17 @@ namespace CapaPresentacion
 
                 string resumen =
                     $"Se encontraron {todosStockBajo.Rows.Count} producto(s) con stock bajo.\n\n" +
-                    $"✅ Se cargará una compra con {productosParaCompra.Rows.Count} producto(s) " +
-                    "del proveedor principal.";
+                    $"✅ Se cargará una compra con {productosParaCompra.Rows.Count} producto(s) del proveedor principal.";
                 if (sinProveedor > 0)
                     resumen += $"\n⚠️ {sinProveedor} producto(s) sin proveedor asignado (omitidos).";
                 if (otrosProv > 0)
-                    resumen += $"\n⚠️ {otrosProv} producto(s) son de otro proveedor " +
-                               "(créales una compra separada manualmente).";
+                    resumen += $"\n⚠️ {otrosProv} producto(s) son de otro proveedor.";
                 resumen += "\n\n¿Continuar?";
 
                 if (MessageBox.Show(resumen, "Compra Automática — Stock Bajo",
                         MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                     return;
 
-                // 6. Abrir FrmCompras EMBEBIDO con los datos
                 AbrirFormularioHijo(new FrmCompras(idProvPrincipal, productosParaCompra));
             }
             catch (Exception ex)
@@ -360,6 +349,10 @@ namespace CapaPresentacion
         private void btnCategorias_Click(object sender, EventArgs e)
             => AbrirFormularioHijo(new FrmGestionCategorias());
 
+        // ── NUEVO: Backup & Restauración ──────────────────────────────────────
+        private void btnBackup_Click(object sender, EventArgs e)
+            => AbrirFormularioHijo(new FrmBackup());
+
         // ─────────────────────────────────────────────────────────────────────
         // SESIÓN / SALIDA
         // ─────────────────────────────────────────────────────────────────────
@@ -395,44 +388,28 @@ namespace CapaPresentacion
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // NAVEGACIÓN PÚBLICA — llamada desde formularios hijos
+        // NAVEGACIÓN PÚBLICA
         // ─────────────────────────────────────────────────────────────────────
+        public void IrARestock() => MostrarInicio();
 
-        /// <summary>
-        /// Vuelve a la pantalla de inicio donde aparecen las notificaciones.
-        /// Lo invoca FrmListadoProductos al hacer clic en lblAlertaStock.
-        /// El usuario puede entonces hacer clic en la notificación específica
-        /// para iniciar el flujo de restock.
-        /// </summary>
-        public void IrARestock()
-        {
-            MostrarInicio();
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // REFRESH PÚBLICOS
-        // ─────────────────────────────────────────────────────────────────────
         public void RefrescarListadoClientes()
         {
-            if (formularioActivo is FrmListadoClientes)
-                ((FrmListadoClientes)formularioActivo).Mostrar();
+            if (formularioActivo is FrmListadoClientes f) f.Mostrar();
         }
 
         public void RefrescarListadoMascotas()
         {
-            if (formularioActivo is FrmListadoMascotas)
-                ((FrmListadoMascotas)formularioActivo).Mostrar();
+            if (formularioActivo is FrmListadoMascotas f) f.Mostrar();
         }
 
         public void RefrescarListadoProductos()
         {
-            if (formularioActivo is FrmListadoProductos)
-                ((FrmListadoProductos)formularioActivo).Mostrar();
+            if (formularioActivo is FrmListadoProductos f) f.Mostrar();
         }
+
         public void RefrescarListadoEmpleados()
         {
-            if (formularioActivo is FrmListadoEmpleados)
-                ((FrmListadoEmpleados)formularioActivo).Mostrar();
+            if (formularioActivo is FrmListadoEmpleados f) f.Mostrar();
         }
     }
 }

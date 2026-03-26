@@ -18,9 +18,9 @@ namespace CapaPresentacion
 
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
             this.lblTitulo = new System.Windows.Forms.Label();
             this.lblVentaId = new System.Windows.Forms.Label();
             this.panelCatalogo = new System.Windows.Forms.Panel();
@@ -94,7 +94,7 @@ namespace CapaPresentacion
             this.panelCatalogo.Controls.Add(this.btnAgregar);
             this.panelCatalogo.Location = new System.Drawing.Point(15, 85);
             this.panelCatalogo.Name = "panelCatalogo";
-            this.panelCatalogo.Size = new System.Drawing.Size(360, 490);
+            this.panelCatalogo.Size = new System.Drawing.Size(364, 490);
             this.panelCatalogo.TabIndex = 2;
             // 
             // lblCatalogo
@@ -116,7 +116,7 @@ namespace CapaPresentacion
             this.txtBuscarProducto.ForeColor = System.Drawing.Color.Gray;
             this.txtBuscarProducto.Location = new System.Drawing.Point(10, 38);
             this.txtBuscarProducto.Name = "txtBuscarProducto";
-            this.txtBuscarProducto.Size = new System.Drawing.Size(335, 30);
+            this.txtBuscarProducto.Size = new System.Drawing.Size(339, 30);
             this.txtBuscarProducto.TabIndex = 1;
             this.txtBuscarProducto.Text = "Buscar producto...";
             this.txtBuscarProducto.TextChanged += new System.EventHandler(this.txtBuscarProducto_TextChanged);
@@ -131,7 +131,7 @@ namespace CapaPresentacion
             this.txtScanner.ForeColor = System.Drawing.Color.Gray;
             this.txtScanner.Location = new System.Drawing.Point(10, 72);
             this.txtScanner.Name = "txtScanner";
-            this.txtScanner.Size = new System.Drawing.Size(335, 27);
+            this.txtScanner.Size = new System.Drawing.Size(339, 27);
             this.txtScanner.TabIndex = 2;
             this.txtScanner.Text = "🔲 Escanear código de barras...";
             this.txtScanner.GotFocus += new System.EventHandler(this.txtScanner_GotFocus);
@@ -146,7 +146,7 @@ namespace CapaPresentacion
             this.lblScannerInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(142)))), ((int)(((byte)(68)))), ((int)(((byte)(173)))));
             this.lblScannerInfo.Location = new System.Drawing.Point(10, 100);
             this.lblScannerInfo.Name = "lblScannerInfo";
-            this.lblScannerInfo.Size = new System.Drawing.Size(335, 16);
+            this.lblScannerInfo.Size = new System.Drawing.Size(339, 16);
             this.lblScannerInfo.TabIndex = 3;
             this.lblScannerInfo.Text = "Escanea o presiona Enter para agregar";
             // 
@@ -160,21 +160,21 @@ namespace CapaPresentacion
             this.dgvProductos.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvProductos.BackgroundColor = System.Drawing.Color.White;
             this.dgvProductos.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            dataGridViewCellStyle4.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            this.dgvProductos.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            this.dgvProductos.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvProductos.ColumnHeadersHeight = 35;
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle5.BackColor = System.Drawing.Color.White;
-            dataGridViewCellStyle5.Font = new System.Drawing.Font("Segoe UI", 9F);
-            dataGridViewCellStyle5.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
-            dataGridViewCellStyle5.SelectionForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle5.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvProductos.DefaultCellStyle = dataGridViewCellStyle5;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.Color.White;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Segoe UI", 9F);
+            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvProductos.DefaultCellStyle = dataGridViewCellStyle2;
             this.dgvProductos.EnableHeadersVisualStyles = false;
             this.dgvProductos.Location = new System.Drawing.Point(10, 118);
             this.dgvProductos.Name = "dgvProductos";
@@ -183,7 +183,7 @@ namespace CapaPresentacion
             this.dgvProductos.RowHeadersWidth = 51;
             this.dgvProductos.RowTemplate.Height = 30;
             this.dgvProductos.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvProductos.Size = new System.Drawing.Size(335, 330);
+            this.dgvProductos.Size = new System.Drawing.Size(339, 330);
             this.dgvProductos.TabIndex = 4;
             this.dgvProductos.DoubleClick += new System.EventHandler(this.dgvProductos_DoubleClick);
             // 
@@ -233,7 +233,7 @@ namespace CapaPresentacion
             this.btnAgregar.ForeColor = System.Drawing.Color.White;
             this.btnAgregar.Location = new System.Drawing.Point(100, 435);
             this.btnAgregar.Name = "btnAgregar";
-            this.btnAgregar.Size = new System.Drawing.Size(245, 38);
+            this.btnAgregar.Size = new System.Drawing.Size(249, 38);
             this.btnAgregar.TabIndex = 7;
             this.btnAgregar.Text = "➕ Agregar al Carrito";
             this.btnAgregar.UseVisualStyleBackColor = false;
@@ -251,7 +251,7 @@ namespace CapaPresentacion
             this.panelCarrito.Controls.Add(this.btnQuitar);
             this.panelCarrito.Location = new System.Drawing.Point(385, 85);
             this.panelCarrito.Name = "panelCarrito";
-            this.panelCarrito.Size = new System.Drawing.Size(327, 490);
+            this.panelCarrito.Size = new System.Drawing.Size(503, 490);
             this.panelCarrito.TabIndex = 3;
             // 
             // lblCarrito
@@ -275,16 +275,16 @@ namespace CapaPresentacion
             this.dgvCarrito.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvCarrito.BackgroundColor = System.Drawing.Color.White;
             this.dgvCarrito.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.dgvCarrito.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            this.dgvCarrito.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvCarrito.ColumnHeadersHeight = 35;
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle6.BackColor = System.Drawing.Color.White;
-            dataGridViewCellStyle6.Font = new System.Drawing.Font("Segoe UI", 9F);
-            dataGridViewCellStyle6.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
-            dataGridViewCellStyle6.SelectionForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle6.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvCarrito.DefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = System.Drawing.Color.White;
+            dataGridViewCellStyle3.Font = new System.Drawing.Font("Segoe UI", 9F);
+            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
+            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
+            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvCarrito.DefaultCellStyle = dataGridViewCellStyle3;
             this.dgvCarrito.EnableHeadersVisualStyles = false;
             this.dgvCarrito.Location = new System.Drawing.Point(10, 38);
             this.dgvCarrito.Name = "dgvCarrito";
@@ -293,7 +293,7 @@ namespace CapaPresentacion
             this.dgvCarrito.RowHeadersWidth = 51;
             this.dgvCarrito.RowTemplate.Height = 30;
             this.dgvCarrito.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvCarrito.Size = new System.Drawing.Size(302, 395);
+            this.dgvCarrito.Size = new System.Drawing.Size(478, 395);
             this.dgvCarrito.TabIndex = 1;
             // 
             // btnQuitar
@@ -308,7 +308,7 @@ namespace CapaPresentacion
             this.btnQuitar.ForeColor = System.Drawing.Color.White;
             this.btnQuitar.Location = new System.Drawing.Point(10, 440);
             this.btnQuitar.Name = "btnQuitar";
-            this.btnQuitar.Size = new System.Drawing.Size(302, 38);
+            this.btnQuitar.Size = new System.Drawing.Size(478, 38);
             this.btnQuitar.TabIndex = 2;
             this.btnQuitar.Text = "🗑️ Quitar seleccionado";
             this.btnQuitar.UseVisualStyleBackColor = false;
@@ -327,9 +327,9 @@ namespace CapaPresentacion
             this.panelResumen.Controls.Add(this.btnConfirmar);
             this.panelResumen.Controls.Add(this.btnCancelar);
             this.panelResumen.Controls.Add(this.lblInfoPrecio);
-            this.panelResumen.Location = new System.Drawing.Point(718, 85);
+            this.panelResumen.Location = new System.Drawing.Point(894, 85);
             this.panelResumen.Name = "panelResumen";
-            this.panelResumen.Size = new System.Drawing.Size(212, 490);
+            this.panelResumen.Size = new System.Drawing.Size(274, 490);
             this.panelResumen.TabIndex = 4;
             // 
             // lblClienteLbl
@@ -351,7 +351,7 @@ namespace CapaPresentacion
             this.cmbCliente.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cmbCliente.Location = new System.Drawing.Point(10, 30);
             this.cmbCliente.Name = "cmbCliente";
-            this.cmbCliente.Size = new System.Drawing.Size(192, 28);
+            this.cmbCliente.Size = new System.Drawing.Size(254, 28);
             this.cmbCliente.TabIndex = 1;
             // 
             // panelTotales
@@ -365,7 +365,7 @@ namespace CapaPresentacion
             this.panelTotales.Controls.Add(this.lblTotal);
             this.panelTotales.Location = new System.Drawing.Point(10, 75);
             this.panelTotales.Name = "panelTotales";
-            this.panelTotales.Size = new System.Drawing.Size(192, 100);
+            this.panelTotales.Size = new System.Drawing.Size(254, 100);
             this.panelTotales.TabIndex = 2;
             // 
             // lblSubtotal
@@ -411,7 +411,7 @@ namespace CapaPresentacion
             this.btnNuevaVenta.ForeColor = System.Drawing.Color.White;
             this.btnNuevaVenta.Location = new System.Drawing.Point(10, 190);
             this.btnNuevaVenta.Name = "btnNuevaVenta";
-            this.btnNuevaVenta.Size = new System.Drawing.Size(145, 40);
+            this.btnNuevaVenta.Size = new System.Drawing.Size(254, 40);
             this.btnNuevaVenta.TabIndex = 3;
             this.btnNuevaVenta.Text = "🆕 Nueva Venta";
             this.btnNuevaVenta.UseVisualStyleBackColor = false;
@@ -427,7 +427,7 @@ namespace CapaPresentacion
             this.btnConfirmar.ForeColor = System.Drawing.Color.White;
             this.btnConfirmar.Location = new System.Drawing.Point(10, 245);
             this.btnConfirmar.Name = "btnConfirmar";
-            this.btnConfirmar.Size = new System.Drawing.Size(145, 40);
+            this.btnConfirmar.Size = new System.Drawing.Size(254, 40);
             this.btnConfirmar.TabIndex = 4;
             this.btnConfirmar.Text = "✅ Confirmar Venta";
             this.btnConfirmar.UseVisualStyleBackColor = false;
@@ -443,7 +443,7 @@ namespace CapaPresentacion
             this.btnCancelar.ForeColor = System.Drawing.Color.White;
             this.btnCancelar.Location = new System.Drawing.Point(10, 300);
             this.btnCancelar.Name = "btnCancelar";
-            this.btnCancelar.Size = new System.Drawing.Size(145, 40);
+            this.btnCancelar.Size = new System.Drawing.Size(254, 40);
             this.btnCancelar.TabIndex = 5;
             this.btnCancelar.Text = "✗ Cancelar Venta";
             this.btnCancelar.UseVisualStyleBackColor = false;
@@ -455,7 +455,7 @@ namespace CapaPresentacion
             this.lblInfoPrecio.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(142)))), ((int)(((byte)(68)))), ((int)(((byte)(173)))));
             this.lblInfoPrecio.Location = new System.Drawing.Point(10, 355);
             this.lblInfoPrecio.Name = "lblInfoPrecio";
-            this.lblInfoPrecio.Size = new System.Drawing.Size(145, 60);
+            this.lblInfoPrecio.Size = new System.Drawing.Size(229, 60);
             this.lblInfoPrecio.TabIndex = 6;
             this.lblInfoPrecio.Text = "ℹ️ Al confirmar:\n• Vendido +10%\n• Otros -10%";
             // 

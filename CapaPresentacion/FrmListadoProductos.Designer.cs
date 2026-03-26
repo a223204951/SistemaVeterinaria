@@ -79,7 +79,7 @@ namespace CapaPresentacion
             this.btnLimpiar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnLimpiar.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnLimpiar.ForeColor = System.Drawing.Color.White;
-            this.btnLimpiar.Location = new System.Drawing.Point(540, 35);
+            this.btnLimpiar.Location = new System.Drawing.Point(688, 35);
             this.btnLimpiar.Name = "btnLimpiar";
             this.btnLimpiar.Size = new System.Drawing.Size(90, 35);
             this.btnLimpiar.TabIndex = 4;
@@ -92,7 +92,7 @@ namespace CapaPresentacion
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(73)))), ((int)(((byte)(94)))));
-            this.label3.Location = new System.Drawing.Point(330, 15);
+            this.label3.Location = new System.Drawing.Point(378, 15);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(80, 20);
             this.label3.TabIndex = 3;
@@ -103,9 +103,9 @@ namespace CapaPresentacion
             this.cmbCategoria.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbCategoria.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.cmbCategoria.FormattingEnabled = true;
-            this.cmbCategoria.Location = new System.Drawing.Point(334, 38);
+            this.cmbCategoria.Location = new System.Drawing.Point(382, 38);
             this.cmbCategoria.Name = "cmbCategoria";
-            this.cmbCategoria.Size = new System.Drawing.Size(190, 31);
+            this.cmbCategoria.Size = new System.Drawing.Size(262, 31);
             this.cmbCategoria.TabIndex = 2;
             this.cmbCategoria.SelectedIndexChanged += new System.EventHandler(this.cmbCategoria_SelectedIndexChanged);
             // 
@@ -135,9 +135,9 @@ namespace CapaPresentacion
             this.panelAlertas.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panelAlertas.Controls.Add(this.lblAlertaVencimiento);
             this.panelAlertas.Controls.Add(this.lblAlertaStock);
-            this.panelAlertas.Location = new System.Drawing.Point(695, 70);
+            this.panelAlertas.Location = new System.Drawing.Point(838, 70);
             this.panelAlertas.Name = "panelAlertas";
-            this.panelAlertas.Size = new System.Drawing.Size(482, 100);
+            this.panelAlertas.Size = new System.Drawing.Size(339, 100);
             this.panelAlertas.TabIndex = 2;
             // 
             // lblAlertaVencimiento
@@ -273,7 +273,7 @@ namespace CapaPresentacion
             this.btnEliminar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnEliminar.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnEliminar.ForeColor = System.Drawing.Color.White;
-            this.btnEliminar.Location = new System.Drawing.Point(776, 7);
+            this.btnEliminar.Location = new System.Drawing.Point(1022, 7);
             this.btnEliminar.Name = "btnEliminar";
             this.btnEliminar.Size = new System.Drawing.Size(110, 38);
             this.btnEliminar.TabIndex = 2;
@@ -289,7 +289,7 @@ namespace CapaPresentacion
             this.btnEditar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnEditar.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnEditar.ForeColor = System.Drawing.Color.White;
-            this.btnEditar.Location = new System.Drawing.Point(670, 7);
+            this.btnEditar.Location = new System.Drawing.Point(916, 7);
             this.btnEditar.Name = "btnEditar";
             this.btnEditar.Size = new System.Drawing.Size(100, 38);
             this.btnEditar.TabIndex = 1;
@@ -305,7 +305,7 @@ namespace CapaPresentacion
             this.btnNuevo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnNuevo.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnNuevo.ForeColor = System.Drawing.Color.White;
-            this.btnNuevo.Location = new System.Drawing.Point(560, 7);
+            this.btnNuevo.Location = new System.Drawing.Point(806, 7);
             this.btnNuevo.Name = "btnNuevo";
             this.btnNuevo.Size = new System.Drawing.Size(104, 38);
             this.btnNuevo.TabIndex = 0;

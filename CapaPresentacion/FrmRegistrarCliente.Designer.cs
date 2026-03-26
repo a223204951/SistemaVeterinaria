@@ -31,10 +31,10 @@ namespace CapaPresentacion
             this.txttelefono = new System.Windows.Forms.TextBox();
             this.rbtnactivo = new System.Windows.Forms.RadioButton();
             this.rbtninactivo = new System.Windows.Forms.RadioButton();
-            this.btncancelar = new System.Windows.Forms.Button();
             this.btnguardar = new System.Windows.Forms.Button();
             this.txtidcliente = new System.Windows.Forms.TextBox();
             this.panelFormulario = new System.Windows.Forms.Panel();
+            this.btnCancelar = new System.Windows.Forms.Button();
             this.panelFormulario.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -146,22 +146,6 @@ namespace CapaPresentacion
             this.rbtninactivo.Text = "✗ INACTIVO";
             this.rbtninactivo.UseVisualStyleBackColor = true;
             // 
-            // btncancelar
-            // 
-            this.btncancelar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(149)))), ((int)(((byte)(165)))), ((int)(((byte)(166)))));
-            this.btncancelar.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btncancelar.FlatAppearance.BorderSize = 0;
-            this.btncancelar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btncancelar.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btncancelar.ForeColor = System.Drawing.Color.White;
-            this.btncancelar.Location = new System.Drawing.Point(668, 470);
-            this.btncancelar.Name = "btncancelar";
-            this.btncancelar.Size = new System.Drawing.Size(120, 45);
-            this.btncancelar.TabIndex = 14;
-            this.btncancelar.Text = "✗ Cancelar";
-            this.btncancelar.UseVisualStyleBackColor = false;
-            this.btncancelar.Click += new System.EventHandler(this.btncancelar_Click);
-            // 
             // btnguardar
             // 
             this.btnguardar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(204)))), ((int)(((byte)(113)))));
@@ -170,7 +154,7 @@ namespace CapaPresentacion
             this.btnguardar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnguardar.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnguardar.ForeColor = System.Drawing.Color.White;
-            this.btnguardar.Location = new System.Drawing.Point(793, 470);
+            this.btnguardar.Location = new System.Drawing.Point(666, 471);
             this.btnguardar.Name = "btnguardar";
             this.btnguardar.Size = new System.Drawing.Size(120, 45);
             this.btnguardar.TabIndex = 15;
@@ -204,15 +188,31 @@ namespace CapaPresentacion
             this.panelFormulario.Size = new System.Drawing.Size(876, 350);
             this.panelFormulario.TabIndex = 1;
             // 
+            // btnCancelar
+            // 
+            this.btnCancelar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            this.btnCancelar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnCancelar.FlatAppearance.BorderSize = 0;
+            this.btnCancelar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCancelar.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnCancelar.ForeColor = System.Drawing.Color.White;
+            this.btnCancelar.Location = new System.Drawing.Point(793, 471);
+            this.btnCancelar.Name = "btnCancelar";
+            this.btnCancelar.Size = new System.Drawing.Size(120, 45);
+            this.btnCancelar.TabIndex = 25;
+            this.btnCancelar.Text = "✗ Cancelar";
+            this.btnCancelar.UseVisualStyleBackColor = false;
+            this.btnCancelar.Click += new System.EventHandler(this.btnCancelar_Click);
+            // 
             // FrmRegistrarCliente
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(236)))), ((int)(((byte)(240)))), ((int)(((byte)(241)))));
             this.ClientSize = new System.Drawing.Size(950, 600);
+            this.Controls.Add(this.btnCancelar);
             this.Controls.Add(this.txtidcliente);
             this.Controls.Add(this.btnguardar);
-            this.Controls.Add(this.btncancelar);
             this.Controls.Add(this.panelFormulario);
             this.Controls.Add(this.label1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -234,8 +234,8 @@ namespace CapaPresentacion
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label7;
-        private System.Windows.Forms.Button btncancelar;
         private System.Windows.Forms.Button btnguardar;
+        private System.Windows.Forms.Button btnCancelar;
         private System.Windows.Forms.Panel panelFormulario;
         public System.Windows.Forms.TextBox txtnombre;
         public System.Windows.Forms.TextBox txtdireccion;
