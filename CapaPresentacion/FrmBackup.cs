@@ -20,7 +20,7 @@ namespace CapaPresentacion
     ///     • Panel central    : acciones (Backup SQL, Snapshot Auto, CSV, Importar)
     ///     • Panel derecho    : log de operaciones
     ///
-    ///   Tab 2 "📸 Snapshots Automáticos"
+    ///   Tab 2 "📸 Snapshots"
     ///     • Grid con snapshots guardados en BD
     ///     • Panel detalle    : muestra info completa del snapshot seleccionado
     ///     • Botones          : Cargar/Restaurar, Renombrar, Eliminar, Volver a la Actualidad
