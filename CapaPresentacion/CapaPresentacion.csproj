@@ -203,6 +203,9 @@
     <EmbeddedResource Include="FrmAuditoria.resx">
       <DependentUpon>FrmAuditoria.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="FrmBackup.resx">
+      <DependentUpon>FrmBackup.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FrmCompras.resx">
       <DependentUpon>FrmCompras.cs</DependentUpon>
     </EmbeddedResource>
