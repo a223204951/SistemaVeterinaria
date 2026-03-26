@@ -14,17 +14,24 @@ namespace CapaPresentacion
     /// <summary>
     /// FORMULARIO DE BACKUP Y RESTAURACIÓN — SOLO ADMINISTRADOR
     ///
-    /// FUNCIONES:
-    ///   A) Backup SQL a archivo  — segmentado por módulos y filtro de fecha
-    ///   B) Snapshot Automático   — guarda el backup directo en la BD (sin archivo)
-    ///   C) Volver a la Actualidad — aplica el snapshot más reciente (o el elegido)
-    ///   D) Exportar CSV          — un .csv por tabla en una carpeta
-    ///   E) Importar/Restaurar SQL desde archivo externo
-    ///   F) Importar CSV desde archivo externo
+    /// PESTAÑAS:
+    ///   Tab 1 "💾 Backup / Importar"
+    ///     • Panel izquierdo  : módulos checkboxes + filtro de fechas
+    ///     • Panel central    : acciones (Backup SQL, Snapshot Auto, CSV, Importar)
+    ///     • Panel derecho    : log de operaciones
+    ///
+    ///   Tab 2 "📸 Snapshots Automáticos"
+    ///     • Grid con snapshots guardados en BD
+    ///     • Panel detalle    : muestra info completa del snapshot seleccionado
+    ///     • Botones          : Cargar/Restaurar, Renombrar, Eliminar, Volver a la Actualidad
+    ///
+    /// La tabla interna _vet_snapshots almacena:
+    ///   id, etiqueta, descripcion_auto (JSON-like con metadatos), fecha_creacion,
+    ///   modulos, filtro_fecha, total_registros, script_sql
     /// </summary>
     public partial class FrmBackup : Form
     {
-        // ── Módulos disponibles con sus tablas asociadas ──────────────────────
+        // ── Módulos → tablas ──────────────────────────────────────────────────
         private static readonly Dictionary<string, string[]> ModulosTablas =
             new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
             {
@@ -39,13 +46,9 @@ namespace CapaPresentacion
                 { "Citas",       new[] { "cita",      "consulta", "pago" } },
             };
 
-        // Tabla interna donde se guardan los snapshots automáticos
         private const string TABLA_SNAPSHOTS = "_vet_snapshots";
 
-        public FrmBackup()
-        {
-            InitializeComponent();
-        }
+        public FrmBackup() { InitializeComponent(); }
 
         // ─────────────────────────────────────────────────────────────────────
         // LOAD
@@ -66,10 +69,13 @@ namespace CapaPresentacion
             ActualizarEstadoFechas();
             GarantizarTablaSnapshots();
             RefrescarListaSnapshots();
+
+            // Suscribir selección del grid para mostrar detalle
+            dgvSnapshots.SelectionChanged += DgvSnapshots_SelectionChanged;
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // MÓDULOS (checkboxes)
+        // MÓDULOS (checkboxes dinámicos)
         // ─────────────────────────────────────────────────────────────────────
         private void CargarModulos()
         {
@@ -83,21 +89,17 @@ namespace CapaPresentacion
                 Width = 220,
                 Tag = "TODOS"
             };
-            chkTodos.CheckedChanged += ChkTodos_CheckedChanged;
-            flpModulos.Controls.Add(chkTodos);
-
-            Panel sep = new Panel
+            chkTodos.CheckedChanged += (s, ev) =>
             {
-                Width = 220,
-                Height = 1,
-                BackColor = Color.FromArgb(220, 220, 220),
-                Margin = new Padding(3, 4, 3, 4)
+                bool st = ((CheckBox)s).Checked;
+                foreach (Control c in flpModulos.Controls)
+                    if (c is CheckBox ck && ck.Tag?.ToString() != "TODOS") ck.Checked = st;
             };
-            flpModulos.Controls.Add(sep);
+            flpModulos.Controls.Add(chkTodos);
+            flpModulos.Controls.Add(new Panel { Width = 220, Height = 1, BackColor = Color.FromArgb(220, 220, 220), Margin = new Padding(3, 4, 3, 4) });
 
             foreach (string modulo in ModulosTablas.Keys)
-            {
-                CheckBox chk = new CheckBox
+                flpModulos.Controls.Add(new CheckBox
                 {
                     Text = modulo,
                     Font = new Font("Segoe UI", 9F),
@@ -105,17 +107,16 @@ namespace CapaPresentacion
                     Width = 220,
                     Checked = true,
                     Tag = modulo
-                };
-                flpModulos.Controls.Add(chk);
-            }
+                });
         }
 
-        private void ChkTodos_CheckedChanged(object sender, EventArgs e)
+        private List<string> ObtenerModulosSeleccionados()
         {
-            bool estado = ((CheckBox)sender).Checked;
-            foreach (Control ctrl in flpModulos.Controls)
-                if (ctrl is CheckBox chk && chk.Tag?.ToString() != "TODOS")
-                    chk.Checked = estado;
+            var lista = new List<string>();
+            foreach (Control c in flpModulos.Controls)
+                if (c is CheckBox ck && ck.Checked && ck.Tag?.ToString() != "TODOS")
+                    lista.Add(ck.Tag.ToString());
+            return lista;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -129,36 +130,20 @@ namespace CapaPresentacion
         {
             bool esRango = rbtnRangoFechas.Checked;
             bool esHastaHoy = rbtnHastaHoy.Checked;
-
             dtpFechaInicio.Enabled = esRango || esHastaHoy;
             dtpFechaFin.Enabled = esRango;
             lblFechaInicio.Enabled = esRango || esHastaHoy;
             lblFechaFin.Enabled = esRango;
-
             if (esHastaHoy) dtpFechaFin.Value = DateTime.Now;
         }
 
-        private List<string> ObtenerModulosSeleccionados()
-        {
-            var lista = new List<string>();
-            foreach (Control ctrl in flpModulos.Controls)
-                if (ctrl is CheckBox chk && chk.Checked && chk.Tag?.ToString() != "TODOS")
-                    lista.Add(chk.Tag.ToString());
-            return lista;
-        }
-
         // ═════════════════════════════════════════════════════════════════════
-        // A) BACKUP SQL A ARCHIVO EXTERNO
+        // A) BACKUP SQL A ARCHIVO
         // ═════════════════════════════════════════════════════════════════════
         private void btnBackupSQL_Click(object sender, EventArgs e)
         {
             List<string> modulos = ObtenerModulosSeleccionados();
-            if (modulos.Count == 0)
-            {
-                MessageBox.Show("⚠️ Seleccione al menos un módulo para respaldar.",
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            if (modulos.Count == 0) { MsgWarn("Seleccione al menos un módulo."); return; }
 
             SaveFileDialog dlg = new SaveFileDialog
             {
@@ -171,451 +156,454 @@ namespace CapaPresentacion
 
             try
             {
-                btnBackupSQL.Enabled = false;
-                btnBackupSQL.Text = "⏳ Generando...";
-                progressBar.Visible = true;
-                progressBar.Value = 0;
-                progressBar.Maximum = modulos.Count;
-
-                StringBuilder sb = GenerarScriptSQL(modulos, out int totalRegistros);
+                SetBusy(btnBackupSQL, "💾 Backup SQL (archivo)", "⏳ Generando...", modulos.Count);
+                StringBuilder sb = GenerarScriptSQL(modulos, out int total);
                 File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
-
-                progressBar.Visible = false;
-                btnBackupSQL.Enabled = true;
-                btnBackupSQL.Text = "💾 Backup SQL";
-
-                AgregarLog($"✅ Backup SQL generado: {Path.GetFileName(dlg.FileName)} | " +
-                           $"Módulos: {modulos.Count} | Registros: {totalRegistros}");
-
+                SetIdle(btnBackupSQL, "💾 Backup SQL (archivo)");
+                AgregarLog($"✅ Backup SQL: {Path.GetFileName(dlg.FileName)} | Módulos: {modulos.Count} | Registros: {total}");
                 MessageBox.Show(
-                    $"✅ Respaldo SQL generado correctamente.\n\n" +
-                    $"Archivo:    {Path.GetFileName(dlg.FileName)}\n" +
-                    $"Módulos:    {modulos.Count}\n" +
-                    $"Registros:  {totalRegistros}\n" +
-                    $"Tamaño:     {new FileInfo(dlg.FileName).Length / 1024.0:N1} KB",
+                    $"✅ Respaldo SQL generado.\n\nArchivo: {Path.GetFileName(dlg.FileName)}\n" +
+                    $"Módulos: {modulos.Count} | Registros: {total}\nTamaño: {new FileInfo(dlg.FileName).Length / 1024.0:N1} KB",
                     "Backup completado", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-            catch (Exception ex)
-            {
-                progressBar.Visible = false;
-                btnBackupSQL.Enabled = true;
-                btnBackupSQL.Text = "💾 Backup SQL";
-                AgregarLog($"❌ Error en Backup SQL: {ex.Message}");
-                MessageBox.Show("❌ " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            catch (Exception ex) { SetIdle(btnBackupSQL, "💾 Backup SQL (archivo)"); MsgErr(ex.Message); AgregarLog("❌ " + ex.Message); }
         }
 
         // ═════════════════════════════════════════════════════════════════════
-        // B) SNAPSHOT AUTOMÁTICO — guarda en la BD, sin archivo externo
+        // B) SNAPSHOT AUTOMÁTICO — guarda en BD sin archivo externo
         // ═════════════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Crea la tabla _vet_snapshots en la BD si no existe todavía.
-        /// </summary>
+        /// <summary>Crea la tabla _vet_snapshots si no existe (incluye columnas de metadatos).</summary>
         private void GarantizarTablaSnapshots()
         {
             try
             {
-                using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
+                using (var con = new SqlConnection(CD_Conexion.Conn))
                 {
                     con.Open();
-                    string sql = $@"
-                        IF NOT EXISTS (
-                            SELECT 1 FROM INFORMATION_SCHEMA.TABLES
-                            WHERE TABLE_NAME = '{TABLA_SNAPSHOTS}'
-                        )
+                    new SqlCommand($@"
+                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='{TABLA_SNAPSHOTS}')
                         CREATE TABLE [dbo].[{TABLA_SNAPSHOTS}] (
-                            [id]             INT IDENTITY(1,1) PRIMARY KEY,
-                            [etiqueta]       NVARCHAR(100) NOT NULL,
-                            [fecha_creacion] DATETIME      NOT NULL DEFAULT GETDATE(),
-                            [modulos]        NVARCHAR(500) NOT NULL,
-                            [script_sql]     NVARCHAR(MAX) NOT NULL
-                        );";
-                    new SqlCommand(sql, con).ExecuteNonQuery();
+                            [id]               INT IDENTITY(1,1) PRIMARY KEY,
+                            [etiqueta]         NVARCHAR(100) NOT NULL,
+                            [fecha_creacion]   DATETIME      NOT NULL DEFAULT GETDATE(),
+                            [modulos]          NVARCHAR(500) NOT NULL,
+                            [filtro_fecha]     NVARCHAR(100) NOT NULL DEFAULT 'Sin filtro',
+                            [total_registros]  INT           NOT NULL DEFAULT 0,
+                            [detalle_tablas]   NVARCHAR(MAX) NULL,
+                            [script_sql]       NVARCHAR(MAX) NOT NULL
+                        );", con).ExecuteNonQuery();
                 }
             }
-            catch (Exception ex)
-            {
-                AgregarLog($"⚠️ No se pudo garantizar la tabla de snapshots: {ex.Message}");
-            }
+            catch (Exception ex) { AgregarLog($"⚠️ No se pudo crear tabla snapshots: {ex.Message}"); }
         }
 
         private void btnSnapshotAuto_Click(object sender, EventArgs e)
         {
             List<string> modulos = ObtenerModulosSeleccionados();
-            if (modulos.Count == 0)
-            {
-                MessageBox.Show("⚠️ Seleccione al menos un módulo para el snapshot.",
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            if (modulos.Count == 0) { MsgWarn("Seleccione al menos un módulo."); return; }
 
             string etiqueta = MostrarDialogoEtiqueta();
-            if (etiqueta == null) return; // usuario canceló
+            if (etiqueta == null) return;
 
             try
             {
-                btnSnapshotAuto.Enabled = false;
-                btnSnapshotAuto.Text = "⏳ Guardando...";
-                progressBar.Visible = true;
-                progressBar.Value = 0;
-                progressBar.Maximum = modulos.Count;
+                SetBusy(btnSnapshotAuto, "📸 Snapshot Automático", "⏳ Guardando...", modulos.Count);
 
-                StringBuilder sb = GenerarScriptSQL(modulos, out int totalRegistros);
-                string scriptCompleto = sb.ToString();
+                // Generar script y recopilar metadatos detallados
+                var detalleTablas = new StringBuilder();
+                int totalRegistros = GenerarScriptConDetalle(modulos, detalleTablas, out StringBuilder sbScript);
+
+                string filtroDesc = ObtenerDescripcionFiltroFecha();
                 string modulosStr = string.Join(", ", modulos);
+                string detalleStr = detalleTablas.ToString();
 
-                using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
+                using (var con = new SqlConnection(CD_Conexion.Conn))
                 {
                     con.Open();
-                    SqlCommand cmd = new SqlCommand(
-                        $"INSERT INTO [dbo].[{TABLA_SNAPSHOTS}] (etiqueta, modulos, script_sql) " +
-                        "VALUES (@et, @mod, @sql)", con)
-                    { CommandTimeout = 120 };
+                    var cmd = new SqlCommand(
+                        $"INSERT INTO [dbo].[{TABLA_SNAPSHOTS}] " +
+                        "(etiqueta, modulos, filtro_fecha, total_registros, detalle_tablas, script_sql) " +
+                        "VALUES (@et, @mod, @filtro, @total, @detalle, @sql)", con)
+                    { CommandTimeout = 180 };
                     cmd.Parameters.AddWithValue("@et", etiqueta);
                     cmd.Parameters.AddWithValue("@mod", modulosStr);
-                    cmd.Parameters.AddWithValue("@sql", scriptCompleto);
+                    cmd.Parameters.AddWithValue("@filtro", filtroDesc);
+                    cmd.Parameters.AddWithValue("@total", totalRegistros);
+                    cmd.Parameters.AddWithValue("@detalle", detalleStr);
+                    cmd.Parameters.AddWithValue("@sql", sbScript.ToString());
                     cmd.ExecuteNonQuery();
                 }
 
-                progressBar.Visible = false;
-                btnSnapshotAuto.Enabled = true;
-                btnSnapshotAuto.Text = "📸 Snapshot Automático";
-
-                AgregarLog($"✅ Snapshot guardado: \"{etiqueta}\" | " +
-                           $"Módulos: {modulos.Count} | Registros: {totalRegistros}");
+                SetIdle(btnSnapshotAuto, "📸 Snapshot Automático");
+                AgregarLog($"✅ Snapshot \"{etiqueta}\" | Módulos: {modulos.Count} | Registros: {totalRegistros}");
                 RefrescarListaSnapshots();
 
                 MessageBox.Show(
-                    $"✅ Snapshot guardado correctamente en la base de datos.\n\n" +
-                    $"Etiqueta:   {etiqueta}\n" +
-                    $"Módulos:    {modulosStr}\n" +
-                    $"Registros:  {totalRegistros}\n\n" +
-                    "Puedes restaurarlo desde la pestaña 'Snapshots'.",
+                    $"✅ Snapshot guardado en la base de datos.\n\n" +
+                    $"Etiqueta:    {etiqueta}\n" +
+                    $"Módulos:     {modulosStr}\n" +
+                    $"Filtro:      {filtroDesc}\n" +
+                    $"Registros:   {totalRegistros}\n\n" +
+                    "Consúltalo en la pestaña '📸 Snapshots'.",
                     "Snapshot completado", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                progressBar.Visible = false;
-                btnSnapshotAuto.Enabled = true;
-                btnSnapshotAuto.Text = "📸 Snapshot Automático";
-                AgregarLog($"❌ Error al guardar snapshot: {ex.Message}");
-                MessageBox.Show("❌ " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                SetIdle(btnSnapshotAuto, "📸 Snapshot Automático");
+                AgregarLog("❌ " + ex.Message);
+                MsgErr(ex.Message);
             }
         }
 
         /// <summary>
-        /// Mini-diálogo para pedir la etiqueta del snapshot.
-        /// Devuelve null si el usuario canceló.
+        /// Como GenerarScriptSQL pero también devuelve un detalle tabla‑por‑tabla
+        /// con el número de registros incluidos en el backup.
         /// </summary>
+        private int GenerarScriptConDetalle(List<string> modulos,
+            StringBuilder detalleTablas, out StringBuilder sbScript)
+        {
+            int totalGlobal = 0;
+            sbScript = new StringBuilder();
+
+            ObtenerRangoFechas(out DateTime? desde, out DateTime? hasta);
+
+            sbScript.AppendLine($"-- BACKUP VeterinariaBD — {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
+            sbScript.AppendLine($"-- Usuario: {FrmLogin.UsuarioActual}");
+            sbScript.AppendLine($"-- Filtro: {ObtenerDescripcionFiltroFecha()}");
+            sbScript.AppendLine("USE [VeterinariaBD]"); sbScript.AppendLine("GO");
+            sbScript.AppendLine("SET NOCOUNT ON;"); sbScript.AppendLine();
+
+            foreach (string modulo in modulos)
+            {
+                if (!ModulosTablas.TryGetValue(modulo, out string[] tablas)) continue;
+                sbScript.AppendLine($"-- MÓDULO: {modulo.ToUpper()}");
+
+                foreach (string tabla in tablas)
+                {
+                    DataTable dt = ObtenerDatosTablaConFecha(tabla, desde, hasta);
+                    int n = dt?.Rows.Count ?? 0;
+                    detalleTablas.AppendLine($"{tabla}: {n} registros");
+                    totalGlobal += n;
+
+                    if (n == 0) { sbScript.AppendLine($"-- [{tabla}]: sin registros."); sbScript.AppendLine(); continue; }
+
+                    sbScript.AppendLine($"-- [{tabla}] — {n} registros");
+                    sbScript.AppendLine($"SET IDENTITY_INSERT [dbo].[{tabla}] ON;");
+                    foreach (DataRow row in dt.Rows) sbScript.AppendLine(GenerarInsertRow(tabla, dt.Columns, row));
+                    sbScript.AppendLine($"SET IDENTITY_INSERT [dbo].[{tabla}] OFF;");
+                    sbScript.AppendLine("GO"); sbScript.AppendLine();
+                }
+
+                progressBar.Value = Math.Min(progressBar.Value + 1, progressBar.Maximum);
+                Application.DoEvents();
+            }
+
+            sbScript.AppendLine($"-- FIN — Total registros: {totalGlobal}");
+            return totalGlobal;
+        }
+
+        /// <summary>Diálogo mini para pedir la etiqueta del snapshot. Devuelve null si cancela.</summary>
         private string MostrarDialogoEtiqueta()
         {
             Form dlg = new Form
             {
                 Text = "Etiqueta del Snapshot",
-                Size = new Size(420, 178),
+                Size = new Size(430, 185),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false,
                 MinimizeBox = false,
                 BackColor = Color.FromArgb(236, 240, 241)
             };
-            Label lbl = new Label
+            var lbl = new Label
             {
-                Text = "Descripción para identificar este snapshot:",
+                Text = "Título descriptivo (los metadatos se guardarán automáticamente):",
                 Font = new Font("Segoe UI", 9F),
                 ForeColor = Color.FromArgb(52, 73, 94),
                 Location = new Point(15, 18),
-                Size = new Size(385, 20)
+                Size = new Size(395, 20)
             };
-            TextBox txt = new TextBox
+            var txt = new TextBox
             {
                 Font = new Font("Segoe UI", 10F),
                 Location = new Point(15, 44),
-                Size = new Size(385, 28),
+                Size = new Size(395, 28),
                 MaxLength = 90,
                 Text = $"Snapshot {DateTime.Now:dd/MM/yyyy HH:mm}"
             };
-            Button btnOk = new Button
-            {
-                Text = "✅ Guardar",
-                Location = new Point(193, 92),
-                Size = new Size(100, 36),
-                BackColor = Color.FromArgb(142, 68, 173),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                DialogResult = DialogResult.OK,
-                Cursor = Cursors.Hand
-            };
-            btnOk.FlatAppearance.BorderSize = 0;
-            Button btnCancel = new Button
-            {
-                Text = "✗ Cancelar",
-                Location = new Point(301, 92),
-                Size = new Size(99, 36),
-                BackColor = Color.FromArgb(149, 165, 166),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                DialogResult = DialogResult.Cancel,
-                Cursor = Cursors.Hand
-            };
-            btnCancel.FlatAppearance.BorderSize = 0;
-            dlg.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCancel });
-            dlg.AcceptButton = btnOk;
-            dlg.CancelButton = btnCancel;
-
+            Button btnOk = MakeBtn("✅ Guardar", Color.FromArgb(142, 68, 173), new Point(200, 96), new Size(100, 36));
+            btnOk.DialogResult = DialogResult.OK;
+            Button btnCx = MakeBtn("✗ Cancelar", Color.FromArgb(149, 165, 166), new Point(308, 96), new Size(102, 36));
+            btnCx.DialogResult = DialogResult.Cancel;
+            dlg.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCx });
+            dlg.AcceptButton = btnOk; dlg.CancelButton = btnCx;
             return dlg.ShowDialog(this) == DialogResult.OK
-                ? (string.IsNullOrWhiteSpace(txt.Text)
-                    ? $"Snapshot {DateTime.Now:dd/MM/yyyy HH:mm}"
-                    : txt.Text.Trim())
+                ? (string.IsNullOrWhiteSpace(txt.Text) ? $"Snapshot {DateTime.Now:dd/MM/yyyy HH:mm}" : txt.Text.Trim())
                 : null;
         }
 
-        // ── Refrescar la lista de snapshots en la pestaña Snapshots ──────────
+        // ─────────────────────────────────────────────────────────────────────
+        // GRID DE SNAPSHOTS — carga y detalle
+        // ─────────────────────────────────────────────────────────────────────
         private void RefrescarListaSnapshots()
         {
             try
             {
-                using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
+                using (var con = new SqlConnection(CD_Conexion.Conn))
                 {
-                    SqlCommand cmd = new SqlCommand(
-                        $"SELECT id, etiqueta, fecha_creacion, modulos, " +
-                        $"LEN(script_sql)/1024 AS tamano_kb " +
+                    var cmd = new SqlCommand(
+                        $"SELECT id, etiqueta, fecha_creacion, modulos, filtro_fecha, " +
+                        $"total_registros, LEN(script_sql)/1024 AS tamano_kb " +
                         $"FROM [dbo].[{TABLA_SNAPSHOTS}] ORDER BY fecha_creacion DESC", con);
-                    DataTable dt = new DataTable();
+                    var dt = new DataTable();
                     new SqlDataAdapter(cmd).Fill(dt);
                     dgvSnapshots.DataSource = dt;
                     ConfigurarColumnasSnapshots();
                 }
             }
-            catch { /* tabla puede no existir todavía */ }
+            catch { /* tabla puede no existir aún */ }
+            LimpiarDetalleSnapshot();
         }
 
         private void ConfigurarColumnasSnapshots()
         {
             if (dgvSnapshots.Columns.Count == 0) return;
             if (dgvSnapshots.Columns.Contains("id")) dgvSnapshots.Columns["id"].Visible = false;
-            if (dgvSnapshots.Columns.Contains("etiqueta"))
-            { dgvSnapshots.Columns["etiqueta"].HeaderText = "Descripción"; dgvSnapshots.Columns["etiqueta"].FillWeight = 40; }
-            if (dgvSnapshots.Columns.Contains("fecha_creacion"))
-            { dgvSnapshots.Columns["fecha_creacion"].HeaderText = "Fecha"; dgvSnapshots.Columns["fecha_creacion"].DefaultCellStyle.Format = "dd/MM/yyyy HH:mm"; dgvSnapshots.Columns["fecha_creacion"].FillWeight = 25; }
-            if (dgvSnapshots.Columns.Contains("modulos"))
-            { dgvSnapshots.Columns["modulos"].HeaderText = "Módulos"; dgvSnapshots.Columns["modulos"].FillWeight = 25; }
-            if (dgvSnapshots.Columns.Contains("tamano_kb"))
-            { dgvSnapshots.Columns["tamano_kb"].HeaderText = "KB"; dgvSnapshots.Columns["tamano_kb"].FillWeight = 10; }
+            if (dgvSnapshots.Columns.Contains("etiqueta")) { dgvSnapshots.Columns["etiqueta"].HeaderText = "Etiqueta"; dgvSnapshots.Columns["etiqueta"].FillWeight = 30; }
+            if (dgvSnapshots.Columns.Contains("fecha_creacion")) { dgvSnapshots.Columns["fecha_creacion"].HeaderText = "Fecha creación"; dgvSnapshots.Columns["fecha_creacion"].DefaultCellStyle.Format = "dd/MM/yyyy HH:mm"; dgvSnapshots.Columns["fecha_creacion"].FillWeight = 18; }
+            if (dgvSnapshots.Columns.Contains("modulos")) { dgvSnapshots.Columns["modulos"].HeaderText = "Módulos"; dgvSnapshots.Columns["modulos"].FillWeight = 27; }
+            if (dgvSnapshots.Columns.Contains("filtro_fecha")) { dgvSnapshots.Columns["filtro_fecha"].HeaderText = "Filtro de fecha"; dgvSnapshots.Columns["filtro_fecha"].FillWeight = 18; }
+            if (dgvSnapshots.Columns.Contains("total_registros")) { dgvSnapshots.Columns["total_registros"].HeaderText = "Registros"; dgvSnapshots.Columns["total_registros"].FillWeight = 10; }
+            if (dgvSnapshots.Columns.Contains("tamano_kb")) { dgvSnapshots.Columns["tamano_kb"].HeaderText = "KB"; dgvSnapshots.Columns["tamano_kb"].FillWeight = 7; }
         }
 
-        // ── Restaurar snapshot seleccionado del grid ──────────────────────────
+        /// <summary>Al seleccionar una fila, carga el detalle de tablas en el panel derecho.</summary>
+        private void DgvSnapshots_SelectionChanged(object sender, EventArgs e)
+        {
+            if (dgvSnapshots.SelectedRows.Count == 0) { LimpiarDetalleSnapshot(); return; }
+
+            try
+            {
+                int id = Convert.ToInt32(dgvSnapshots.CurrentRow.Cells["id"].Value);
+                using (var con = new SqlConnection(CD_Conexion.Conn))
+                {
+                    var cmd = new SqlCommand(
+                        $"SELECT etiqueta, fecha_creacion, modulos, filtro_fecha, " +
+                        $"total_registros, detalle_tablas FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE id=@id", con);
+                    cmd.Parameters.AddWithValue("@id", id);
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        if (!r.Read()) { LimpiarDetalleSnapshot(); return; }
+
+                        lblDetEtiqueta.Text = r["etiqueta"]?.ToString() ?? "";
+                        lblDetFecha.Text = Convert.ToDateTime(r["fecha_creacion"]).ToString("dd/MM/yyyy HH:mm:ss");
+                        lblDetModulos.Text = r["modulos"]?.ToString() ?? "";
+                        lblDetFiltro.Text = r["filtro_fecha"]?.ToString() ?? "Sin filtro";
+                        lblDetRegistros.Text = $"{r["total_registros"]} registros totales";
+                        rtbDetTablas.Text = r["detalle_tablas"]?.ToString() ?? "(sin detalle)";
+                    }
+                }
+                panelDetalle.Visible = true;
+            }
+            catch { LimpiarDetalleSnapshot(); }
+        }
+
+        private void LimpiarDetalleSnapshot()
+        {
+            lblDetEtiqueta.Text = "—";
+            lblDetFecha.Text = "—";
+            lblDetModulos.Text = "—";
+            lblDetFiltro.Text = "—";
+            lblDetRegistros.Text = "—";
+            rtbDetTablas.Text = "";
+            panelDetalle.Visible = false;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // BOTONES DE ACCIÓN SOBRE EL SNAPSHOT SELECCIONADO
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>Restaura el snapshot seleccionado (INSERT IF NOT EXISTS).</summary>
         private void btnRestaurarSnapshot_Click(object sender, EventArgs e)
         {
-            if (dgvSnapshots.SelectedRows.Count == 0)
-            {
-                MessageBox.Show("Seleccione un snapshot de la lista.",
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            int id = Convert.ToInt32(dgvSnapshots.CurrentRow.Cells["id"].Value);
-            string etiqueta = dgvSnapshots.CurrentRow.Cells["etiqueta"].Value?.ToString() ?? "";
-            string fecha = Convert.ToDateTime(dgvSnapshots.CurrentRow.Cells["fecha_creacion"].Value)
-                                     .ToString("dd/MM/yyyy HH:mm");
+            if (!VerificarSeleccion()) return;
+            int id = SnapId();
+            string etiqueta = SnapEtiqueta();
+            string fecha = SnapFecha();
 
             if (MessageBox.Show(
                     $"⚠️ ¿Restaurar el snapshot?\n\n" +
-                    $"Descripción: {etiqueta}\n" +
-                    $"Fecha:       {fecha}\n\n" +
-                    "Los registros con el mismo ID serán omitidos (INSERT IF NOT EXISTS).\n" +
-                    "¿Continuar?",
-                    "Confirmar restauración",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+                    $"Etiqueta: {etiqueta}\nFecha: {fecha}\n\n" +
+                    "Registros con el mismo ID serán omitidos.\n¿Continuar?",
+                    "Confirmar restauración", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+                != DialogResult.Yes) return;
 
             try
             {
-                btnRestaurarSnapshot.Enabled = false;
-                btnRestaurarSnapshot.Text = "⏳ Restaurando...";
-                progressBar.Visible = true;
-
-                string script;
-                using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
-                {
-                    SqlCommand cmd = new SqlCommand(
-                        $"SELECT script_sql FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE id = @id", con);
-                    cmd.Parameters.AddWithValue("@id", id);
-                    script = cmd.ExecuteScalar()?.ToString() ?? "";
-                }
-                if (string.IsNullOrWhiteSpace(script))
-                    throw new Exception("El snapshot está vacío o no se encontró.");
-
-                EjecutarScriptSQL(script);
-
-                progressBar.Visible = false;
-                btnRestaurarSnapshot.Enabled = true;
-                btnRestaurarSnapshot.Text = "♻️ Restaurar Snapshot";
-
+                SetBusy(btnRestaurarSnapshot, "♻️ Restaurar", "⏳ Restaurando...");
+                EjecutarScriptDesdeBD(id);
+                SetIdle(btnRestaurarSnapshot, "♻️ Restaurar");
                 AgregarLog($"✅ Snapshot restaurado: \"{etiqueta}\" ({fecha})");
-                MessageBox.Show($"✅ Snapshot \"{etiqueta}\" restaurado correctamente.",
+                MessageBox.Show($"✅ Snapshot \"{etiqueta}\" restaurado.",
                     "Restauración completada", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-            catch (Exception ex)
-            {
-                progressBar.Visible = false;
-                btnRestaurarSnapshot.Enabled = true;
-                btnRestaurarSnapshot.Text = "♻️ Restaurar Snapshot";
-                AgregarLog($"❌ Error restaurando snapshot: {ex.Message}");
-                MessageBox.Show("❌ " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            catch (Exception ex) { SetIdle(btnRestaurarSnapshot, "♻️ Restaurar"); AgregarLog("❌ " + ex.Message); MsgErr(ex.Message); }
         }
 
-        // ── Eliminar snapshot ─────────────────────────────────────────────────
-        private void btnEliminarSnapshot_Click(object sender, EventArgs e)
+        /// <summary>Permite cambiar la etiqueta del snapshot seleccionado.</summary>
+        private void btnRenombrarSnapshot_Click(object sender, EventArgs e)
         {
-            if (dgvSnapshots.SelectedRows.Count == 0)
+            if (!VerificarSeleccion()) return;
+            int id = SnapId();
+            string etiquetaActual = SnapEtiqueta();
+
+            // Mini-diálogo reutilizando la misma lógica
+            Form dlg = new Form
             {
-                MessageBox.Show("Seleccione un snapshot para eliminar.",
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+                Text = "Renombrar Snapshot",
+                Size = new Size(430, 155),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                BackColor = Color.FromArgb(236, 240, 241)
+            };
+            var lbl = new Label
+            {
+                Text = "Nueva etiqueta:",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(52, 73, 94),
+                Location = new Point(15, 18),
+                Size = new Size(200, 20)
+            };
+            var txt = new TextBox
+            {
+                Font = new Font("Segoe UI", 10F),
+                Location = new Point(15, 40),
+                Size = new Size(395, 28),
+                MaxLength = 90,
+                Text = etiquetaActual
+            };
+            Button btnOk = MakeBtn("✅ Guardar", Color.FromArgb(142, 68, 173), new Point(200, 80), new Size(100, 34));
+            btnOk.DialogResult = DialogResult.OK;
+            Button btnCx = MakeBtn("✗ Cancelar", Color.FromArgb(149, 165, 166), new Point(308, 80), new Size(102, 34));
+            btnCx.DialogResult = DialogResult.Cancel;
+            dlg.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCx });
+            dlg.AcceptButton = btnOk; dlg.CancelButton = btnCx;
 
-            int id = Convert.ToInt32(dgvSnapshots.CurrentRow.Cells["id"].Value);
-            string etiqueta = dgvSnapshots.CurrentRow.Cells["etiqueta"].Value?.ToString() ?? "";
-
-            if (MessageBox.Show($"¿Eliminar el snapshot \"{etiqueta}\"?\nEsta acción no se puede deshacer.",
-                    "Confirmar eliminación",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+            string nueva = txt.Text.Trim();
+            if (string.IsNullOrWhiteSpace(nueva)) return;
 
             try
             {
-                using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
+                using (var con = new SqlConnection(CD_Conexion.Conn))
                 {
                     con.Open();
-                    SqlCommand cmd = new SqlCommand(
-                        $"DELETE FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE id = @id", con);
+                    var cmd = new SqlCommand($"UPDATE [dbo].[{TABLA_SNAPSHOTS}] SET etiqueta=@et WHERE id=@id", con);
+                    cmd.Parameters.AddWithValue("@et", nueva);
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.ExecuteNonQuery();
+                }
+                AgregarLog($"✏️ Snapshot renombrado: \"{etiquetaActual}\" → \"{nueva}\"");
+                RefrescarListaSnapshots();
+            }
+            catch (Exception ex) { MsgErr(ex.Message); }
+        }
+
+        /// <summary>Elimina el snapshot seleccionado de la BD.</summary>
+        private void btnEliminarSnapshot_Click(object sender, EventArgs e)
+        {
+            if (!VerificarSeleccion()) return;
+            int id = SnapId();
+            string etiqueta = SnapEtiqueta();
+
+            if (MessageBox.Show($"¿Eliminar el snapshot \"{etiqueta}\"?\nEsta acción no se puede deshacer.",
+                    "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                != DialogResult.Yes) return;
+
+            try
+            {
+                using (var con = new SqlConnection(CD_Conexion.Conn))
+                {
+                    con.Open();
+                    var cmd = new SqlCommand($"DELETE FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE id=@id", con);
                     cmd.Parameters.AddWithValue("@id", id);
                     cmd.ExecuteNonQuery();
                 }
                 AgregarLog($"🗑️ Snapshot eliminado: \"{etiqueta}\"");
                 RefrescarListaSnapshots();
             }
-            catch (Exception ex)
-            {
-                AgregarLog($"❌ Error eliminando snapshot: {ex.Message}");
-                MessageBox.Show("❌ " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            catch (Exception ex) { MsgErr(ex.Message); }
         }
 
         // ═════════════════════════════════════════════════════════════════════
         // C) VOLVER A LA ACTUALIDAD
-        //    Aplica el snapshot más reciente (o el seleccionado en el grid).
-        //    Útil tras haber restaurado un backup antiguo y querer regresar
-        //    al estado guardado más reciente.
         // ═════════════════════════════════════════════════════════════════════
         private void btnVolverActualidad_Click(object sender, EventArgs e)
         {
             int idUsar = -1;
             string etiquetaUsar = "";
 
-            // Si hay fila seleccionada en el grid de snapshots, preguntar si la usa
+            // Si hay fila seleccionada en el grid, preguntar
             if (dgvSnapshots.SelectedRows.Count > 0)
             {
-                string etiquetaSel = dgvSnapshots.CurrentRow.Cells["etiqueta"].Value?.ToString() ?? "";
-                string fechaSel = Convert.ToDateTime(
-                    dgvSnapshots.CurrentRow.Cells["fecha_creacion"].Value)
-                    .ToString("dd/MM/yyyy HH:mm");
-
+                string etSel = SnapEtiqueta();
+                string feSel = SnapFecha();
                 DialogResult resp = MessageBox.Show(
-                    $"Tiene seleccionado el snapshot:\n\n" +
-                    $"  \"{etiquetaSel}\"  ({fechaSel})\n\n" +
-                    "• Sí  → restaura el snapshot seleccionado como estado actual\n" +
-                    "• No  → restaura el snapshot MÁS RECIENTE automáticamente\n" +
+                    $"Snapshot seleccionado:\n  \"{etSel}\"  ({feSel})\n\n" +
+                    "• Sí  → restaura el snapshot seleccionado\n" +
+                    "• No  → restaura el MÁS RECIENTE automáticamente\n" +
                     "• Cancelar → volver sin hacer nada",
-                    "Volver a la Actualidad",
-                    MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    "Volver a la Actualidad", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
 
                 if (resp == DialogResult.Cancel) return;
-                if (resp == DialogResult.Yes)
-                {
-                    idUsar = Convert.ToInt32(dgvSnapshots.CurrentRow.Cells["id"].Value);
-                    etiquetaUsar = etiquetaSel;
-                }
+                if (resp == DialogResult.Yes) { idUsar = SnapId(); etiquetaUsar = etSel; }
             }
 
-            // Si no se eligió manualmente, tomar el más reciente
+            // Tomar el más reciente si no se eligió manualmente
             if (idUsar < 0)
             {
                 try
                 {
-                    using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
+                    using (var con = new SqlConnection(CD_Conexion.Conn))
                     {
-                        SqlCommand cmd = new SqlCommand(
-                            $"SELECT TOP 1 id, etiqueta FROM [dbo].[{TABLA_SNAPSHOTS}] " +
-                            "ORDER BY fecha_creacion DESC", con);
-                        using (SqlDataReader r = cmd.ExecuteReader())
+                        var cmd = new SqlCommand(
+                            $"SELECT TOP 1 id, etiqueta FROM [dbo].[{TABLA_SNAPSHOTS}] ORDER BY fecha_creacion DESC", con);
+                        using (var r = cmd.ExecuteReader())
                         {
                             if (!r.Read())
                             {
-                                MessageBox.Show(
-                                    "⚠️ No hay snapshots guardados en el sistema.\n\n" +
-                                    "Primero genere un Snapshot Automático desde la pestaña 'Backup'.",
-                                    "Sin snapshots", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                MsgWarn("No hay snapshots guardados.\nGenere primero un Snapshot Automático.");
                                 return;
                             }
-                            idUsar = r.GetInt32(0);
-                            etiquetaUsar = r.GetString(1);
+                            idUsar = r.GetInt32(0); etiquetaUsar = r.GetString(1);
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("❌ " + ex.Message,
-                        "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
+                catch (Exception ex) { MsgErr(ex.Message); return; }
             }
 
             if (MessageBox.Show(
-                    $"¿Restaurar el snapshot \"{etiquetaUsar}\" como estado actual?\n\n" +
-                    "Los registros con el mismo ID serán omitidos (INSERT IF NOT EXISTS).",
+                    $"¿Restaurar \"{etiquetaUsar}\" como estado actual?\n" +
+                    "Registros con el mismo ID serán omitidos.",
                     "Confirmar — Volver a la Actualidad",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
             try
             {
-                btnVolverActualidad.Enabled = false;
-                btnVolverActualidad.Text = "⏳ Restaurando...";
-                progressBar.Visible = true;
-
-                string script;
-                using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
-                {
-                    SqlCommand cmd = new SqlCommand(
-                        $"SELECT script_sql FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE id = @id", con);
-                    cmd.Parameters.AddWithValue("@id", idUsar);
-                    script = cmd.ExecuteScalar()?.ToString() ?? "";
-                }
-                EjecutarScriptSQL(script);
-
-                progressBar.Visible = false;
-                btnVolverActualidad.Enabled = true;
-                btnVolverActualidad.Text = "🔄 Volver a la Actualidad";
-
-                AgregarLog($"✅ Actualidad restaurada desde snapshot: \"{etiquetaUsar}\"");
-                MessageBox.Show($"✅ Estado restaurado correctamente desde:\n\"{etiquetaUsar}\"",
+                SetBusy(btnVolverActualidad, "🔄 Volver a la Actualidad", "⏳ Restaurando...");
+                EjecutarScriptDesdeBD(idUsar);
+                SetIdle(btnVolverActualidad, "🔄 Volver a la Actualidad");
+                AgregarLog($"✅ Actualidad restaurada desde: \"{etiquetaUsar}\"");
+                MessageBox.Show($"✅ Estado restaurado desde:\n\"{etiquetaUsar}\"",
                     "Actualidad restaurada", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                progressBar.Visible = false;
-                btnVolverActualidad.Enabled = true;
-                btnVolverActualidad.Text = "🔄 Volver a la Actualidad";
-                AgregarLog($"❌ Error: {ex.Message}");
-                MessageBox.Show("❌ " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                SetIdle(btnVolverActualidad, "🔄 Volver a la Actualidad");
+                AgregarLog("❌ " + ex.Message); MsgErr(ex.Message);
             }
         }
 
@@ -625,33 +613,18 @@ namespace CapaPresentacion
         private void btnBackupCSV_Click(object sender, EventArgs e)
         {
             List<string> modulos = ObtenerModulosSeleccionados();
-            if (modulos.Count == 0)
-            {
-                MessageBox.Show("⚠️ Seleccione al menos un módulo para exportar.",
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            if (modulos.Count == 0) { MsgWarn("Seleccione al menos un módulo."); return; }
 
             FolderBrowserDialog dlg = new FolderBrowserDialog
-            {
-                Description = "Seleccione la carpeta donde guardar los archivos CSV",
-                ShowNewFolderButton = true
-            };
+            { Description = "Seleccione la carpeta destino", ShowNewFolderButton = true };
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
             try
             {
-                btnBackupCSV.Enabled = false;
-                btnBackupCSV.Text = "⏳ Exportando...";
-                progressBar.Visible = true;
-                progressBar.Value = 0;
-                progressBar.Maximum = modulos.Count;
-
-                string carpeta = Path.Combine(dlg.SelectedPath,
-                    $"VetBackup_CSV_{DateTime.Now:yyyyMMdd_HHmm}");
+                SetBusy(btnBackupCSV, "📊 Exportar CSV", "⏳ Exportando...", modulos.Count);
+                string carpeta = Path.Combine(dlg.SelectedPath, $"VetBackup_CSV_{DateTime.Now:yyyyMMdd_HHmm}");
                 Directory.CreateDirectory(carpeta);
-
-                int totalRegistros = 0, archivosCreados = 0;
+                int total = 0, archivos = 0;
 
                 foreach (string modulo in modulos)
                 {
@@ -661,85 +634,44 @@ namespace CapaPresentacion
                         DataTable dt = ObtenerDatosTabla(tabla);
                         if (dt == null || dt.Rows.Count == 0) continue;
                         EscribirCSV(dt, Path.Combine(carpeta, $"{tabla}.csv"));
-                        totalRegistros += dt.Rows.Count;
-                        archivosCreados++;
+                        total += dt.Rows.Count; archivos++;
                     }
-                    progressBar.Value++;
-                    Application.DoEvents();
+                    progressBar.Value++; Application.DoEvents();
                 }
 
-                progressBar.Visible = false;
-                btnBackupCSV.Enabled = true;
-                btnBackupCSV.Text = "📊 Exportar CSV";
-
-                AgregarLog($"✅ CSV exportados: {archivosCreados} archivos | " +
-                           $"Registros: {totalRegistros} | Carpeta: {carpeta}");
-
-                MessageBox.Show(
-                    $"✅ Exportación CSV completada.\n\n" +
-                    $"Archivos:   {archivosCreados}\n" +
-                    $"Registros:  {totalRegistros}\n" +
-                    $"Carpeta:    {carpeta}",
-                    "Exportación completada", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
+                SetIdle(btnBackupCSV, "📊 Exportar CSV");
+                AgregarLog($"✅ CSV: {archivos} archivos | {total} registros | {carpeta}");
+                MessageBox.Show($"✅ Exportación CSV completada.\n\nArchivos: {archivos} | Registros: {total}\nCarpeta: {carpeta}",
+                    "CSV exportado", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 System.Diagnostics.Process.Start("explorer.exe", carpeta);
             }
-            catch (Exception ex)
-            {
-                progressBar.Visible = false;
-                btnBackupCSV.Enabled = true;
-                btnBackupCSV.Text = "📊 Exportar CSV";
-                AgregarLog($"❌ Error exportando CSV: {ex.Message}");
-                MessageBox.Show("❌ " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            catch (Exception ex) { SetIdle(btnBackupCSV, "📊 Exportar CSV"); MsgErr(ex.Message); AgregarLog("❌ " + ex.Message); }
         }
 
         // ═════════════════════════════════════════════════════════════════════
-        // E) RESTAURAR DESDE ARCHIVO SQL EXTERNO
+        // E) RESTAURAR DESDE ARCHIVO SQL
         // ═════════════════════════════════════════════════════════════════════
         private void btnRestaurar_Click(object sender, EventArgs e)
         {
             OpenFileDialog dlg = new OpenFileDialog
-            {
-                Title = "Seleccionar archivo de respaldo",
-                Filter = "Archivo SQL|*.sql|Todos los archivos|*.*"
-            };
+            { Title = "Archivo de respaldo", Filter = "Archivo SQL|*.sql|Todos|*.*" };
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
             if (MessageBox.Show(
-                    $"⚠️ ADVERTENCIA: La importación puede SOBRESCRIBIR registros existentes.\n\n" +
-                    $"Archivo: {Path.GetFileName(dlg.FileName)}\n\n" +
-                    "¿Desea continuar?",
-                    "Confirmar restauración",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+                    $"⚠️ La importación puede sobrescribir datos.\n\nArchivo: {Path.GetFileName(dlg.FileName)}\n\n¿Continuar?",
+                    "Confirmar restauración", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+                != DialogResult.Yes) return;
 
             try
             {
-                btnRestaurar.Enabled = false;
-                btnRestaurar.Text = "⏳ Restaurando...";
-                progressBar.Visible = true;
-
+                SetBusy(btnRestaurar, "📥 Importar .SQL", "⏳ Restaurando...");
                 EjecutarScriptSQL(File.ReadAllText(dlg.FileName, Encoding.UTF8));
-
-                progressBar.Visible = false;
-                btnRestaurar.Enabled = true;
-                btnRestaurar.Text = "📥 Importar .SQL";
-
-                AgregarLog($"✅ Restauración completada desde: {Path.GetFileName(dlg.FileName)}");
-                MessageBox.Show(
-                    $"✅ Restauración completada.\n\nArchivo: {Path.GetFileName(dlg.FileName)}",
+                SetIdle(btnRestaurar, "📥 Importar .SQL");
+                AgregarLog($"✅ Restaurado desde archivo: {Path.GetFileName(dlg.FileName)}");
+                MessageBox.Show($"✅ Restauración completada.\nArchivo: {Path.GetFileName(dlg.FileName)}",
                     "Restauración completada", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-            catch (Exception ex)
-            {
-                progressBar.Visible = false;
-                btnRestaurar.Enabled = true;
-                btnRestaurar.Text = "📥 Importar .SQL";
-                AgregarLog($"❌ Error en restauración: {ex.Message}");
-                MessageBox.Show("❌ " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            catch (Exception ex) { SetIdle(btnRestaurar, "📥 Importar .SQL"); MsgErr(ex.Message); AgregarLog("❌ " + ex.Message); }
         }
 
         // ═════════════════════════════════════════════════════════════════════
@@ -748,162 +680,52 @@ namespace CapaPresentacion
         private void btnImportarCSV_Click(object sender, EventArgs e)
         {
             OpenFileDialog dlg = new OpenFileDialog
-            {
-                Title = "Seleccionar archivo CSV para importar",
-                Filter = "Archivos CSV|*.csv",
-                Multiselect = true
-            };
+            { Title = "Importar CSV", Filter = "CSV|*.csv", Multiselect = true };
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
             if (MessageBox.Show(
-                    $"⚠️ Se importarán {dlg.FileNames.Length} archivo(s) CSV.\n\n" +
-                    "Registros con el mismo ID serán omitidos.\n\n¿Continuar?",
-                    "Confirmar importación",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    $"Se importarán {dlg.FileNames.Length} archivo(s). Registros duplicados serán omitidos.\n\n¿Continuar?",
+                    "Confirmar importación", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                != DialogResult.Yes) return;
 
             try
             {
-                btnImportarCSV.Enabled = false;
-                btnImportarCSV.Text = "⏳ Importando...";
-                progressBar.Visible = true;
-                progressBar.Maximum = dlg.FileNames.Length;
-                progressBar.Value = 0;
-
-                int totalImportados = 0;
-                var errores = new List<string>();
+                SetBusy(btnImportarCSV, "📤 Importar CSV", "⏳ Importando...", dlg.FileNames.Length);
+                int total = 0; var errores = new List<string>();
 
                 foreach (string archivo in dlg.FileNames)
                 {
-                    try
-                    {
-                        int n = ImportarDesdeCSV(archivo);
-                        totalImportados += n;
-                        AgregarLog($"✅ Importado: {Path.GetFileName(archivo)} ({n} registros)");
-                    }
-                    catch (Exception ex)
-                    {
-                        errores.Add($"{Path.GetFileName(archivo)}: {ex.Message}");
-                        AgregarLog($"❌ Error en {Path.GetFileName(archivo)}: {ex.Message}");
-                    }
-                    progressBar.Value++;
-                    Application.DoEvents();
+                    try { total += ImportarDesdeCSV(archivo); AgregarLog($"✅ {Path.GetFileName(archivo)}"); }
+                    catch (Exception ex) { errores.Add($"{Path.GetFileName(archivo)}: {ex.Message}"); AgregarLog($"❌ {Path.GetFileName(archivo)}: {ex.Message}"); }
+                    progressBar.Value++; Application.DoEvents();
                 }
 
-                progressBar.Visible = false;
-                btnImportarCSV.Enabled = true;
-                btnImportarCSV.Text = "📤 Importar CSV";
-
-                string msg = $"✅ Importación CSV completada.\n\nRegistros importados: {totalImportados}";
+                SetIdle(btnImportarCSV, "📤 Importar CSV");
+                string msg = $"✅ Importación completada.\nRegistros importados: {total}";
                 if (errores.Count > 0) msg += $"\n\n⚠️ Errores ({errores.Count}):\n" + string.Join("\n", errores);
-                MessageBox.Show(msg, "Importación completada", MessageBoxButtons.OK,
+                MessageBox.Show(msg, "Importación CSV", MessageBoxButtons.OK,
                     errores.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
             }
-            catch (Exception ex)
-            {
-                progressBar.Visible = false;
-                btnImportarCSV.Enabled = true;
-                btnImportarCSV.Text = "📤 Importar CSV";
-                MessageBox.Show("❌ " + ex.Message,
-                    "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            catch (Exception ex) { SetIdle(btnImportarCSV, "📤 Importar CSV"); MsgErr(ex.Message); }
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // LIMPIAR LOG
+        // LOG
         // ─────────────────────────────────────────────────────────────────────
         private void btnLimpiarLog_Click(object sender, EventArgs e) => rtbLog.Clear();
 
-        // ═════════════════════════════════════════════════════════════════════
-        // HELPERS — GENERACIÓN DEL SCRIPT SQL
-        // ═════════════════════════════════════════════════════════════════════
-        private StringBuilder GenerarScriptSQL(List<string> modulos, out int totalRegistros)
+        private void AgregarLog(string msg)
         {
-            totalRegistros = 0;
-            var sb = new StringBuilder();
-
-            sb.AppendLine("-- ============================================================");
-            sb.AppendLine($"-- BACKUP VeterinariaBD — Generado: {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
-            sb.AppendLine($"-- Usuario: {FrmLogin.UsuarioActual}");
-            sb.AppendLine($"-- Módulos: {string.Join(", ", modulos)}");
-            sb.AppendLine("-- Filtro de fecha: " + ObtenerDescripcionFiltroFecha());
-            sb.AppendLine("-- ============================================================");
-            sb.AppendLine("USE [VeterinariaBD]");
-            sb.AppendLine("GO");
-            sb.AppendLine("SET NOCOUNT ON;");
-            sb.AppendLine();
-
-            ObtenerRangoFechas(out DateTime? desde, out DateTime? hasta);
-
-            foreach (string modulo in modulos)
-            {
-                if (!ModulosTablas.TryGetValue(modulo, out string[] tablas)) continue;
-
-                sb.AppendLine($"-- ── MÓDULO: {modulo.ToUpper()} ──────────────────────────────────────");
-                sb.AppendLine();
-
-                foreach (string tabla in tablas)
-                {
-                    DataTable dt = ObtenerDatosTablaConFecha(tabla, desde, hasta);
-                    if (dt == null || dt.Rows.Count == 0)
-                    {
-                        sb.AppendLine($"-- Tabla [{tabla}]: sin registros en el período seleccionado.");
-                        sb.AppendLine();
-                        continue;
-                    }
-
-                    sb.AppendLine($"-- Tabla [{tabla}] — {dt.Rows.Count} registros");
-                    sb.AppendLine($"SET IDENTITY_INSERT [dbo].[{tabla}] ON;");
-
-                    foreach (DataRow row in dt.Rows)
-                    {
-                        sb.AppendLine(GenerarInsertRow(tabla, dt.Columns, row));
-                        totalRegistros++;
-                    }
-
-                    sb.AppendLine($"SET IDENTITY_INSERT [dbo].[{tabla}] OFF;");
-                    sb.AppendLine("GO");
-                    sb.AppendLine();
-                }
-
-                progressBar.Value = Math.Min(progressBar.Value + 1, progressBar.Maximum);
-                Application.DoEvents();
-            }
-
-            sb.AppendLine("-- ============================================================");
-            sb.AppendLine($"-- FIN DEL BACKUP — Total registros: {totalRegistros}");
-            sb.AppendLine("-- ============================================================");
-
-            return sb;
+            if (rtbLog.InvokeRequired) { rtbLog.Invoke(new Action<string>(AgregarLog), msg); return; }
+            rtbLog.AppendText($"[{DateTime.Now:HH:mm:ss}]  {msg}\n");
+            rtbLog.ScrollToCaret();
         }
 
-        private string GenerarInsertRow(string tabla, DataColumnCollection cols, DataRow row)
-        {
-            var colNames = new List<string>();
-            var colValues = new List<string>();
+        // ═════════════════════════════════════════════════════════════════════
+        // HELPERS INTERNOS
+        // ═════════════════════════════════════════════════════════════════════
 
-            foreach (DataColumn col in cols)
-            {
-                colNames.Add($"[{col.ColumnName}]");
-                object val = row[col];
-                if (val == null || val == DBNull.Value)
-                    colValues.Add("NULL");
-                else if (val is bool b)
-                    colValues.Add(b ? "1" : "0");
-                else if (val is DateTime dt)
-                    colValues.Add($"'{dt:yyyy-MM-dd HH:mm:ss}'");
-                else if (val is decimal || val is int || val is long || val is double || val is float)
-                    colValues.Add(Convert.ToString(val, System.Globalization.CultureInfo.InvariantCulture));
-                else
-                    colValues.Add($"N'{val.ToString().Replace("'", "''")}'");
-            }
-
-            return
-                $"IF NOT EXISTS (SELECT 1 FROM [dbo].[{tabla}] WHERE [{cols[0].ColumnName}] = {colValues[0]})\r\n" +
-                $"    INSERT INTO [dbo].[{tabla}] ({string.Join(", ", colNames)})\r\n" +
-                $"    VALUES ({string.Join(", ", colValues)});";
-        }
-
-        // ── Columnas de fecha por tabla (para filtrado temporal) ──────────────
+        // ── Columnas de fecha por tabla ───────────────────────────────────────
         private static readonly Dictionary<string, string> ColumnasFecha =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -922,174 +744,163 @@ namespace CapaPresentacion
         {
             try
             {
-                using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
+                using (var con = new SqlConnection(CD_Conexion.Conn))
                 {
                     con.Open();
                     string where = "";
-                    if ((desde.HasValue || hasta.HasValue) &&
-                        ColumnasFecha.TryGetValue(tabla, out string colFecha))
+                    if ((desde.HasValue || hasta.HasValue) && ColumnasFecha.TryGetValue(tabla, out string col))
                     {
                         var conds = new List<string>();
-                        if (desde.HasValue) conds.Add($"[{colFecha}] >= '{desde.Value:yyyy-MM-dd}'");
-                        if (hasta.HasValue) conds.Add($"[{colFecha}] <= '{hasta.Value:yyyy-MM-dd 23:59:59}'");
+                        if (desde.HasValue) conds.Add($"[{col}] >= '{desde.Value:yyyy-MM-dd}'");
+                        if (hasta.HasValue) conds.Add($"[{col}] <= '{hasta.Value:yyyy-MM-dd 23:59:59}'");
                         if (conds.Count > 0) where = " WHERE " + string.Join(" AND ", conds);
                     }
-                    SqlCommand cmd = new SqlCommand(
-                        $"SELECT * FROM [dbo].[{tabla}]{where}", con)
-                    { CommandTimeout = 120 };
-                    DataTable dt = new DataTable(tabla);
-                    new SqlDataAdapter(cmd).Fill(dt);
+                    var dt = new DataTable(tabla);
+                    new SqlDataAdapter(new SqlCommand($"SELECT * FROM [dbo].[{tabla}]{where}", con) { CommandTimeout = 120 }).Fill(dt);
                     return dt;
                 }
             }
             catch { return null; }
         }
 
-        private DataTable ObtenerDatosTabla(string tabla)
-            => ObtenerDatosTablaConFecha(tabla, null, null);
+        private DataTable ObtenerDatosTabla(string tabla) => ObtenerDatosTablaConFecha(tabla, null, null);
 
-        // ── Ejecutar script SQL dividido en bloques GO ────────────────────────
+        private StringBuilder GenerarScriptSQL(List<string> modulos, out int totalRegistros)
+        {
+            var sbDet = new StringBuilder();
+            totalRegistros = GenerarScriptConDetalle(modulos, sbDet, out StringBuilder sb);
+            return sb;
+        }
+
+        private string GenerarInsertRow(string tabla, DataColumnCollection cols, DataRow row)
+        {
+            var names = new List<string>(); var vals = new List<string>();
+            foreach (DataColumn col in cols)
+            {
+                names.Add($"[{col.ColumnName}]");
+                object v = row[col];
+                if (v == null || v == DBNull.Value) vals.Add("NULL");
+                else if (v is bool b) vals.Add(b ? "1" : "0");
+                else if (v is DateTime dt) vals.Add($"'{dt:yyyy-MM-dd HH:mm:ss}'");
+                else if (v is decimal || v is int || v is long || v is double || v is float)
+                    vals.Add(Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture));
+                else vals.Add($"N'{v.ToString().Replace("'", "''")}'");
+            }
+            return
+                $"IF NOT EXISTS (SELECT 1 FROM [dbo].[{tabla}] WHERE [{cols[0].ColumnName}]={vals[0]})\r\n" +
+                $"    INSERT INTO [dbo].[{tabla}] ({string.Join(", ", names)}) VALUES ({string.Join(", ", vals)});";
+        }
+
+        private void EjecutarScriptDesdeBD(int id)
+        {
+            string script;
+            using (var con = new SqlConnection(CD_Conexion.Conn))
+            {
+                var cmd = new SqlCommand($"SELECT script_sql FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE id=@id", con);
+                cmd.Parameters.AddWithValue("@id", id);
+                script = cmd.ExecuteScalar()?.ToString() ?? "";
+            }
+            if (string.IsNullOrWhiteSpace(script)) throw new Exception("El snapshot está vacío o no se encontró.");
+            EjecutarScriptSQL(script);
+        }
+
         private void EjecutarScriptSQL(string script)
         {
             string[] bloques = script.Split(
                 new[] { "\r\nGO\r\n", "\nGO\n", "\r\nGO\n", "\nGO\r\n", "\r\nGO", "\nGO" },
                 StringSplitOptions.RemoveEmptyEntries);
 
-            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
+            using (var con = new SqlConnection(CD_Conexion.Conn))
             {
                 con.Open();
-                progressBar.Maximum = bloques.Length;
-                progressBar.Value = 0;
-
+                progressBar.Maximum = bloques.Length; progressBar.Value = 0;
                 foreach (string bloque in bloques)
                 {
                     string sql = bloque.Trim();
                     if (string.IsNullOrWhiteSpace(sql) || sql.StartsWith("--")) continue;
-                    try
-                    {
-                        new SqlCommand(sql, con) { CommandTimeout = 120 }.ExecuteNonQuery();
-                    }
+                    try { new SqlCommand(sql, con) { CommandTimeout = 120 }.ExecuteNonQuery(); }
                     catch (SqlException ex)
-                    {
-                        // Ignorar errores de IDENTITY_INSERT (8101) y duplicados (2627/2601)
-                        if (ex.Number != 8101 && ex.Number != 2627 && ex.Number != 2601)
-                            AgregarLog($"⚠️ Advertencia SQL: {ex.Message}");
-                    }
+                    { if (ex.Number != 8101 && ex.Number != 2627 && ex.Number != 2601) AgregarLog($"⚠️ {ex.Message}"); }
                     progressBar.Value = Math.Min(progressBar.Value + 1, progressBar.Maximum);
                     Application.DoEvents();
                 }
             }
         }
 
-        // ── CSV: escribir archivo ─────────────────────────────────────────────
+        // ── CSV helpers ───────────────────────────────────────────────────────
         private void EscribirCSV(DataTable dt, string ruta)
         {
             var sb = new StringBuilder();
             var cols = new List<string>();
             foreach (DataColumn col in dt.Columns) cols.Add($"\"{col.ColumnName}\"");
             sb.AppendLine(string.Join(",", cols));
-
             foreach (DataRow row in dt.Rows)
             {
-                var vals = new List<string>();
+                var v2 = new List<string>();
                 foreach (DataColumn col in dt.Columns)
                 {
                     object v = row[col];
-                    if (v == null || v == DBNull.Value) vals.Add("");
-                    else vals.Add($"\"{v.ToString().Replace("\"", "\"\"")}\"");
+                    v2.Add(v == null || v == DBNull.Value ? "" : $"\"{v.ToString().Replace("\"", "\"\"")}\"");
                 }
-                sb.AppendLine(string.Join(",", vals));
+                sb.AppendLine(string.Join(",", v2));
             }
             File.WriteAllText(ruta, sb.ToString(), Encoding.UTF8);
         }
 
-        // ── CSV: importar archivo ─────────────────────────────────────────────
         private int ImportarDesdeCSV(string archivo)
         {
             string tabla = Path.GetFileNameWithoutExtension(archivo);
-            bool tablaValida = false;
-            foreach (var kvp in ModulosTablas)
-            {
-                foreach (string t in kvp.Value)
-                    if (t.Equals(tabla, StringComparison.OrdinalIgnoreCase))
-                    { tablaValida = true; break; }
-                if (tablaValida) break;
-            }
-            if (!tablaValida)
-                throw new Exception($"Tabla '{tabla}' no reconocida. Solo se pueden importar tablas del sistema.");
+            bool valida = false;
+            foreach (var kvp in ModulosTablas) foreach (string t in kvp.Value) if (t.Equals(tabla, StringComparison.OrdinalIgnoreCase)) { valida = true; break; }
+            if (!valida) throw new Exception($"Tabla '{tabla}' no reconocida.");
 
             string[] lineas = File.ReadAllLines(archivo, Encoding.UTF8);
             if (lineas.Length < 2) return 0;
-
-            string[] encabezados = ParsearLineaCSV(lineas[0]);
+            string[] headers = ParsearCSV(lineas[0]);
             int importados = 0;
 
-            using (SqlConnection con = new SqlConnection(CD_Conexion.Conn))
+            using (var con = new SqlConnection(CD_Conexion.Conn))
             {
                 con.Open();
                 try { new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] ON", con).ExecuteNonQuery(); } catch { }
-
                 for (int i = 1; i < lineas.Length; i++)
                 {
                     if (string.IsNullOrWhiteSpace(lineas[i])) continue;
-                    string[] valores = ParsearLineaCSV(lineas[i]);
-                    if (valores.Length != encabezados.Length) continue;
-
-                    var colNames = new List<string>();
-                    var paramNames = new List<string>();
-                    for (int j = 0; j < encabezados.Length; j++)
-                    { colNames.Add($"[{encabezados[j]}]"); paramNames.Add($"@p{j}"); }
-
-                    string sql =
-                        $"IF NOT EXISTS (SELECT 1 FROM [dbo].[{tabla}] WHERE [{encabezados[0]}] = @p0)\r\n" +
-                        $"  INSERT INTO [dbo].[{tabla}] ({string.Join(",", colNames)})\r\n" +
-                        $"  VALUES ({string.Join(",", paramNames)})";
-
-                    SqlCommand cmd = new SqlCommand(sql, con);
-                    for (int j = 0; j < valores.Length; j++)
-                    {
-                        string v = valores[j];
-                        if (string.IsNullOrEmpty(v)) cmd.Parameters.AddWithValue($"@p{j}", DBNull.Value);
-                        else cmd.Parameters.AddWithValue($"@p{j}", v);
-                    }
+                    string[] vals = ParsearCSV(lineas[i]);
+                    if (vals.Length != headers.Length) continue;
+                    var cn = new List<string>(); var pn = new List<string>();
+                    for (int j = 0; j < headers.Length; j++) { cn.Add($"[{headers[j]}]"); pn.Add($"@p{j}"); }
+                    var cmd = new SqlCommand(
+                        $"IF NOT EXISTS(SELECT 1 FROM [dbo].[{tabla}] WHERE [{headers[0]}]=@p0)\r\n" +
+                        $"  INSERT INTO [dbo].[{tabla}] ({string.Join(",", cn)}) VALUES ({string.Join(",", pn)})", con);
+                    for (int j = 0; j < vals.Length; j++)
+                        cmd.Parameters.AddWithValue($"@p{j}", string.IsNullOrEmpty(vals[j]) ? (object)DBNull.Value : vals[j]);
                     try { cmd.ExecuteNonQuery(); importados++; } catch { }
                 }
-
                 try { new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] OFF", con).ExecuteNonQuery(); } catch { }
             }
             return importados;
         }
 
-        private string[] ParsearLineaCSV(string linea)
+        private string[] ParsearCSV(string linea)
         {
-            var campos = new List<string>();
-            bool enComillas = false;
-            var campo = new StringBuilder();
+            var campos = new List<string>(); bool q = false; var f = new StringBuilder();
             for (int i = 0; i < linea.Length; i++)
             {
                 char c = linea[i];
-                if (c == '"')
-                {
-                    if (enComillas && i + 1 < linea.Length && linea[i + 1] == '"')
-                    { campo.Append('"'); i++; }
-                    else enComillas = !enComillas;
-                }
-                else if (c == ',' && !enComillas)
-                { campos.Add(campo.ToString()); campo.Clear(); }
-                else campo.Append(c);
+                if (c == '"') { if (q && i + 1 < linea.Length && linea[i + 1] == '"') { f.Append('"'); i++; } else q = !q; }
+                else if (c == ',' && !q) { campos.Add(f.ToString()); f.Clear(); }
+                else f.Append(c);
             }
-            campos.Add(campo.ToString());
-            return campos.ToArray();
+            campos.Add(f.ToString()); return campos.ToArray();
         }
 
-        // ── Helpers de fechas ─────────────────────────────────────────────────
+        // ── Rango de fechas ───────────────────────────────────────────────────
         private void ObtenerRangoFechas(out DateTime? desde, out DateTime? hasta)
         {
             desde = null; hasta = null;
-            if (rbtnHastaHoy.Checked)
-            { desde = dtpFechaInicio.Value.Date; hasta = DateTime.Now; }
-            else if (rbtnRangoFechas.Checked)
-            { desde = dtpFechaInicio.Value.Date; hasta = dtpFechaFin.Value.Date; }
+            if (rbtnHastaHoy.Checked) { desde = dtpFechaInicio.Value.Date; hasta = DateTime.Now; }
+            else if (rbtnRangoFechas.Checked) { desde = dtpFechaInicio.Value.Date; hasta = dtpFechaFin.Value.Date; }
         }
 
         private string ObtenerDescripcionFiltroFecha()
@@ -1100,13 +911,43 @@ namespace CapaPresentacion
             return "";
         }
 
-        // ── Log ───────────────────────────────────────────────────────────────
-        private void AgregarLog(string mensaje)
+        // ── Atajos para el snapshot seleccionado en el grid ───────────────────
+        private bool VerificarSeleccion()
         {
-            if (rtbLog.InvokeRequired)
-            { rtbLog.Invoke(new Action<string>(AgregarLog), mensaje); return; }
-            rtbLog.AppendText($"[{DateTime.Now:HH:mm:ss}]  {mensaje}\n");
-            rtbLog.ScrollToCaret();
+            if (dgvSnapshots.SelectedRows.Count > 0) return true;
+            MsgWarn("Seleccione un snapshot de la lista."); return false;
         }
+        private int SnapId() => Convert.ToInt32(dgvSnapshots.CurrentRow.Cells["id"].Value);
+        private string SnapEtiqueta() => dgvSnapshots.CurrentRow.Cells["etiqueta"].Value?.ToString() ?? "";
+        private string SnapFecha() => Convert.ToDateTime(dgvSnapshots.CurrentRow.Cells["fecha_creacion"].Value).ToString("dd/MM/yyyy HH:mm");
+
+        // ── UI helpers ────────────────────────────────────────────────────────
+        private void SetBusy(Button btn, string textoOriginal, string textoBusy, int maxProg = 1)
+        {
+            btn.Enabled = false; btn.Text = textoBusy;
+            progressBar.Maximum = maxProg; progressBar.Value = 0; progressBar.Visible = true;
+        }
+        private void SetIdle(Button btn, string texto)
+        { btn.Enabled = true; btn.Text = texto; progressBar.Visible = false; }
+
+        private Button MakeBtn(string text, Color back, Point loc, Size size)
+        {
+            var b = new Button
+            {
+                Text = text,
+                BackColor = back,
+                ForeColor = Color.White,
+                Location = loc,
+                Size = size,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            b.FlatAppearance.BorderSize = 0;
+            return b;
+        }
+
+        private void MsgWarn(string msg) => MessageBox.Show(msg, "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        private void MsgErr(string msg) => MessageBox.Show("❌ " + msg, "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
     }
 }
