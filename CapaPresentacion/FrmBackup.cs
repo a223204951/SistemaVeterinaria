@@ -841,12 +841,37 @@ namespace CapaPresentacion
             { Description = "Seleccione la carpeta destino", ShowNewFolderButton = true };
             if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
+            // Si hay filtro de fecha, avisar cuáles tablas no aplican el filtro
+            ObtenerRangoFechas(out DateTime? desde, out DateTime? hasta);
+            if (desde.HasValue)
+            {
+                // Calcular tablas maestras (sin columna de fecha) que se exportarán completas
+                var sinFiltro = new List<string>();
+                foreach (string modulo in modulos)
+                {
+                    if (!ModulosTablas.TryGetValue(modulo, out string[] tablas)) continue;
+                    foreach (string t in tablas)
+                        if (!ColumnasFecha.ContainsKey(t))
+                            sinFiltro.Add(t);
+                }
+
+                if (sinFiltro.Count > 0)
+                {
+                    string aviso =
+                        $"ℹ️ Las siguientes tablas no tienen columna de fecha y se exportarán COMPLETAS " +
+                        $"(sin filtro de fecha):\n\n• {string.Join("\n• ", sinFiltro)}\n\n" +
+                        "Esto es necesario porque son tablas de referencia (catálogos). ¿Continuar?";
+                    if (MessageBox.Show(aviso, "Aviso — tablas sin filtro de fecha",
+                            MessageBoxButtons.YesNo, MessageBoxIcon.Information)
+                        != System.Windows.Forms.DialogResult.Yes) return;
+                }
+            }
+
             try
             {
                 SetBusy(btnBackupCSV, "📊 Exportar CSV", "⏳ Exportando...", modulos.Count);
                 string carpeta = Path.Combine(dlg.SelectedPath, $"VetBackup_CSV_{DateTime.Now:yyyyMMdd_HHmm}");
                 Directory.CreateDirectory(carpeta);
-                ObtenerRangoFechas(out DateTime? desde, out DateTime? hasta);
                 int total = 0, archivos = 0;
 
                 foreach (string modulo in modulos)
@@ -857,6 +882,8 @@ namespace CapaPresentacion
                         DataTable dt = ObtenerDatosTablaConFecha(tabla, desde, hasta);
                         if (dt == null || dt.Rows.Count == 0) continue;
                         EscribirCSV(dt, Path.Combine(carpeta, $"{tabla}.csv"));
+                        bool conFiltro = desde.HasValue && ColumnasFecha.ContainsKey(tabla);
+                        AgregarLog($"   ✅ {tabla}.csv — {dt.Rows.Count} registros{(conFiltro ? " (filtrado)" : " (completo)")}");
                         total += dt.Rows.Count; archivos++;
                     }
                     progressBar.Value++; System.Windows.Forms.Application.DoEvents();
@@ -864,7 +891,8 @@ namespace CapaPresentacion
 
                 SetIdle(btnBackupCSV, "📊 Exportar CSV");
                 AgregarLog($"✅ CSV: {archivos} archivos | {total} registros");
-                MessageBox.Show($"✅ Exportación CSV completada.\n\nArchivos: {archivos} | Registros: {total}\nCarpeta: {carpeta}",
+                MessageBox.Show(
+                    $"✅ Exportación CSV completada.\n\nArchivos: {archivos} | Registros: {total}\nCarpeta: {carpeta}",
                     "CSV exportado", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 System.Diagnostics.Process.Start("explorer.exe", carpeta);
             }
@@ -909,25 +937,50 @@ namespace CapaPresentacion
             if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
             if (MessageBox.Show(
-                    $"Se importarán {dlg.FileNames.Length} archivo(s). Registros duplicados serán omitidos.\n\n¿Continuar?",
-                    "Confirmar importación", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                    $"⚠️ Se importarán {dlg.FileNames.Length} archivo(s).\n\n" +
+                    "IMPORTANTE: Los datos actuales de cada tabla serán ELIMINADOS y reemplazados " +
+                    "por los del CSV. Esta acción no se puede deshacer.\n\n¿Continuar?",
+                    "Confirmar importación CSV", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
                 != System.Windows.Forms.DialogResult.Yes) return;
 
             try
             {
-                SetBusy(btnImportarCSV, "📤 Importar CSV", "⏳ Importando...", dlg.FileNames.Length);
+                // Ordenar los archivos en el orden FK-safe de restauración
+                // para evitar errores de restricciones de clave foránea
+                var archivosOrdenados = new List<string>(dlg.FileNames);
+                archivosOrdenados.Sort((a, b) =>
+                {
+                    string ta = Path.GetFileNameWithoutExtension(a);
+                    string tb = Path.GetFileNameWithoutExtension(b);
+                    int ia = OrdenRestauracion.IndexOf(ta);
+                    int ib = OrdenRestauracion.IndexOf(tb);
+                    if (ia < 0) ia = 999;
+                    if (ib < 0) ib = 999;
+                    return ia.CompareTo(ib);
+                });
+
+                SetBusy(btnImportarCSV, "📤 Importar CSV", "⏳ Importando...", archivosOrdenados.Count);
                 int total = 0;
                 var errores = new List<string>();
 
-                foreach (string archivo in dlg.FileNames)
+                foreach (string archivo in archivosOrdenados)
                 {
-                    try { total += ImportarDesdeCSV(archivo); AgregarLog($"✅ {Path.GetFileName(archivo)}"); }
-                    catch (Exception ex) { errores.Add($"{Path.GetFileName(archivo)}: {ex.Message}"); AgregarLog($"❌ {Path.GetFileName(archivo)}: {ex.Message}"); }
+                    try
+                    {
+                        int n = ImportarDesdeCSV(archivo);
+                        total += n;
+                        AgregarLog($"   ✅ {Path.GetFileName(archivo)} — {n} registros reemplazados");
+                    }
+                    catch (Exception ex)
+                    {
+                        errores.Add($"{Path.GetFileName(archivo)}: {ex.Message}");
+                        AgregarLog($"   ❌ {Path.GetFileName(archivo)}: {ex.Message}");
+                    }
                     progressBar.Value++; System.Windows.Forms.Application.DoEvents();
                 }
 
                 SetIdle(btnImportarCSV, "📤 Importar CSV");
-                string msg = $"✅ Importación completada.\nRegistros importados: {total}";
+                string msg = $"✅ Importación CSV completada.\nRegistros importados: {total}";
                 if (errores.Count > 0) msg += $"\n\n⚠️ Errores ({errores.Count}):\n" + string.Join("\n", errores);
                 MessageBox.Show(msg, "Importación CSV", MessageBoxButtons.OK,
                     errores.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
@@ -1015,30 +1068,85 @@ namespace CapaPresentacion
                     if (t.Equals(tabla, StringComparison.OrdinalIgnoreCase)) { valida = true; break; }
             if (!valida) throw new Exception($"Tabla '{tabla}' no reconocida.");
 
+            // Tabla protegida: nunca borrar sesiones ni snapshots
+            if (TablasProtegidas.Contains(tabla))
+                throw new Exception($"La tabla '{tabla}' está protegida y no puede ser reemplazada.");
+
             string[] lineas = File.ReadAllLines(archivo, Encoding.UTF8);
             if (lineas.Length < 2) return 0;
             string[] headers = ParsearCSV(lineas[0]);
             int importados = 0;
 
+            // Determinar el orden FK-safe inverso para el DELETE
+            // (hay que borrar en orden inverso al de restauración para respetar FK)
+            int posTabla = OrdenRestauracion.IndexOf(tabla);
+
             using (var con = new SqlConnection(CD_Conexion.Conn))
             {
                 con.Open();
-                try { new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] ON", con).ExecuteNonQuery(); } catch { }
-                for (int i = 1; i < lineas.Length; i++)
+                using (SqlTransaction tx = con.BeginTransaction())
                 {
-                    if (string.IsNullOrWhiteSpace(lineas[i])) continue;
-                    string[] vals = ParsearCSV(lineas[i]);
-                    if (vals.Length != headers.Length) continue;
-                    var cn = new List<string>(); var pn = new List<string>();
-                    for (int j = 0; j < headers.Length; j++) { cn.Add($"[{headers[j]}]"); pn.Add($"@p{j}"); }
-                    var cmd = new SqlCommand(
-                        $"IF NOT EXISTS(SELECT 1 FROM [dbo].[{tabla}] WHERE [{headers[0]}]=@p0)\r\n" +
-                        $"  INSERT INTO [dbo].[{tabla}] ({string.Join(",", cn)}) VALUES ({string.Join(",", pn)})", con);
-                    for (int j = 0; j < vals.Length; j++)
-                        cmd.Parameters.AddWithValue($"@p{j}", string.IsNullOrEmpty(vals[j]) ? (object)DBNull.Value : vals[j]);
-                    try { cmd.ExecuteNonQuery(); importados++; } catch { }
+                    try
+                    {
+                        // 1. Deshabilitar FK de esta tabla para hacer el DELETE limpio
+                        new SqlCommand(
+                            $"ALTER TABLE [dbo].[{tabla}] NOCHECK CONSTRAINT ALL;",
+                            con, tx)
+                        { CommandTimeout = 30 }.ExecuteNonQuery();
+
+                        // 2. Borrar TODOS los registros actuales (sustitución completa)
+                        new SqlCommand($"DELETE FROM [dbo].[{tabla}];", con, tx)
+                        { CommandTimeout = 120 }.ExecuteNonQuery();
+
+                        // 3. Habilitar IDENTITY_INSERT si aplica
+                        bool tieneIdentity = TieneColumnaIdentity(tabla);
+                        if (tieneIdentity)
+                            new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] ON;", con, tx)
+                            { CommandTimeout = 10 }.ExecuteNonQuery();
+
+                        // 4. Insertar todos los registros del CSV
+                        var cn = new List<string>();
+                        var pn = new List<string>();
+                        for (int j = 0; j < headers.Length; j++)
+                        {
+                            cn.Add($"[{headers[j]}]");
+                            pn.Add($"@p{j}");
+                        }
+                        string sqlInsert = $"INSERT INTO [dbo].[{tabla}] " +
+                                           $"({string.Join(", ", cn)}) " +
+                                           $"VALUES ({string.Join(", ", pn)});";
+
+                        for (int i = 1; i < lineas.Length; i++)
+                        {
+                            if (string.IsNullOrWhiteSpace(lineas[i])) continue;
+                            string[] vals = ParsearCSV(lineas[i]);
+                            if (vals.Length != headers.Length) continue;
+
+                            var cmd = new SqlCommand(sqlInsert, con, tx) { CommandTimeout = 30 };
+                            for (int j = 0; j < vals.Length; j++)
+                                cmd.Parameters.AddWithValue($"@p{j}",
+                                    string.IsNullOrEmpty(vals[j]) ? (object)DBNull.Value : vals[j]);
+                            try { cmd.ExecuteNonQuery(); importados++; } catch { /* fila con error: continuar */ }
+                        }
+
+                        // 5. Restaurar IDENTITY_INSERT y FK
+                        if (tieneIdentity)
+                            new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] OFF;", con, tx)
+                            { CommandTimeout = 10 }.ExecuteNonQuery();
+
+                        new SqlCommand(
+                            $"ALTER TABLE [dbo].[{tabla}] WITH CHECK CHECK CONSTRAINT ALL;",
+                            con, tx)
+                        { CommandTimeout = 30 }.ExecuteNonQuery();
+
+                        tx.Commit();
+                    }
+                    catch
+                    {
+                        tx.Rollback();
+                        throw;
+                    }
                 }
-                try { new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] OFF", con).ExecuteNonQuery(); } catch { }
             }
             return importados;
         }
