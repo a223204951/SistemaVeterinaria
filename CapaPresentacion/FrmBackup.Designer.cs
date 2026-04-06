@@ -4,17 +4,6 @@ using System.Windows.Forms;
 
 namespace CapaPresentacion
 {
-    /// <summary>
-    /// DESIGNER — FrmBackup (versión con modificaciones)
-    ///
-    /// CAMBIOS vs versión anterior:
-    ///   • Eliminado el botón "🔄 Volver a la Actualidad" y su lógica.
-    ///   • Filtro de fechas simplificado a dos opciones:
-    ///       rbtnTodosDatos → "Todos los datos actuales"
-    ///       rbtnDesdeHasta → "Desde fecha → hasta hoy" (un solo DateTimePicker)
-    ///   • panelDetalle y todos sus controles completamente configurados.
-    ///   • Botón btnRenombrarSnapshot incluido.
-    /// </summary>
     partial class FrmBackup
     {
         private IContainer components = null;
@@ -61,10 +50,13 @@ namespace CapaPresentacion
             this.flpModulos = new FlowLayoutPanel();
             this.panelFechas = new Panel();
             this.lblFechasTitulo = new Label();
-            this.rbtnTodosDatos = new RadioButton();   // ← nuevo
-            this.rbtnDesdeHasta = new RadioButton();   // ← nuevo
+            this.rbtnTodosDatos = new RadioButton();
+            this.rbtnDesdeHastaHoy = new RadioButton();     // Desde X hasta HOY (ahora mismo)
+            this.rbtnDesdeHasta = new RadioButton();         // Desde X hasta Y (rango fijo)
             this.lblFechaInicio = new Label();
             this.dtpFechaInicio = new DateTimePicker();
+            this.lblFechaFin = new Label();
+            this.dtpFechaFin = new DateTimePicker();
             this.panelAcciones = new Panel();
             this.lblBackupTitulo = new Label();
             this.lblBackupDesc = new Label();
@@ -96,7 +88,7 @@ namespace CapaPresentacion
             this.btnEliminarSnapshot = new Button();
             this.dgvSnapshots = new DataGridView();
 
-            // Panel detalle (completamente configurado)
+            // Panel detalle
             this.panelDetalle = new Panel();
             this.lblDetTituloInterno = new Label();
             this.lblDetEtqLabel = new Label();
@@ -175,7 +167,7 @@ namespace CapaPresentacion
             this.panelModulos.Controls.Add(this.lblModulosTitulo);
             this.panelModulos.Controls.Add(this.flpModulos);
             this.panelModulos.Location = new Point(10, 10);
-            this.panelModulos.Size = new Size(262, 298);
+            this.panelModulos.Size = new Size(262, 270);
 
             this.lblModulosTitulo.AutoSize = true;
             this.lblModulosTitulo.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
@@ -187,20 +179,24 @@ namespace CapaPresentacion
             this.flpModulos.BackColor = Color.Transparent;
             this.flpModulos.FlowDirection = FlowDirection.TopDown;
             this.flpModulos.Location = new Point(0, 25);
-            this.flpModulos.Size = new Size(262, 272);
+            this.flpModulos.Size = new Size(262, 244);
             this.flpModulos.WrapContents = false;
 
-            // panelFechas — filtros simplificados
+            // ── panelFechas — TRES opciones de filtro ─────────────────────────
+            // Altura aumentada a 210 para acomodar 3 radios + 2 pares de fecha
             this.panelFechas.BackColor = Color.FromArgb(248, 249, 250);
             this.panelFechas.BorderStyle = BorderStyle.FixedSingle;
             this.panelFechas.Controls.AddRange(new Control[] {
                 this.lblFechasTitulo,
                 this.rbtnTodosDatos,
+                this.rbtnDesdeHastaHoy,
                 this.rbtnDesdeHasta,
                 this.lblFechaInicio,
-                this.dtpFechaInicio });
-            this.panelFechas.Location = new Point(10, 318);
-            this.panelFechas.Size = new Size(262, 150);
+                this.dtpFechaInicio,
+                this.lblFechaFin,
+                this.dtpFechaFin });
+            this.panelFechas.Location = new Point(10, 290);
+            this.panelFechas.Size = new Size(262, 238);
 
             this.lblFechasTitulo.AutoSize = true;
             this.lblFechasTitulo.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
@@ -208,37 +204,63 @@ namespace CapaPresentacion
             this.lblFechasTitulo.Location = new Point(10, 8);
             this.lblFechasTitulo.Text = "📅 Alcance del snapshot";
 
-            // "Todos los datos actuales" — opción por defecto
+            // Opción 1: Todos los datos actuales
             this.rbtnTodosDatos.AutoSize = true;
             this.rbtnTodosDatos.Checked = true;
             this.rbtnTodosDatos.Cursor = Cursors.Hand;
             this.rbtnTodosDatos.Font = new Font("Segoe UI", 8.5F);
             this.rbtnTodosDatos.ForeColor = Color.FromArgb(52, 73, 94);
-            this.rbtnTodosDatos.Location = new Point(10, 32);
+            this.rbtnTodosDatos.Location = new Point(10, 30);
             this.rbtnTodosDatos.Text = "Todos los datos actuales";
-            this.rbtnTodosDatos.CheckedChanged += new System.EventHandler(this.rbtnTodosDatos_CheckedChanged);
+            this.rbtnTodosDatos.CheckedChanged += new System.EventHandler(this.rbtnFiltro_CheckedChanged);
 
-            // "Desde fecha → hasta hoy"
+            // Opción 2: Desde fecha → hasta AHORA (momento del clic)
+            this.rbtnDesdeHastaHoy.AutoSize = true;
+            this.rbtnDesdeHastaHoy.Cursor = Cursors.Hand;
+            this.rbtnDesdeHastaHoy.Font = new Font("Segoe UI", 8.5F);
+            this.rbtnDesdeHastaHoy.ForeColor = Color.FromArgb(52, 73, 94);
+            this.rbtnDesdeHastaHoy.Location = new Point(10, 54);
+            this.rbtnDesdeHastaHoy.Text = "Desde fecha → hasta ahora";
+            this.rbtnDesdeHastaHoy.CheckedChanged += new System.EventHandler(this.rbtnFiltro_CheckedChanged);
+
+            // Opción 3: Desde fecha → hasta fecha (rango fijo)
             this.rbtnDesdeHasta.AutoSize = true;
             this.rbtnDesdeHasta.Cursor = Cursors.Hand;
             this.rbtnDesdeHasta.Font = new Font("Segoe UI", 8.5F);
             this.rbtnDesdeHasta.ForeColor = Color.FromArgb(52, 73, 94);
-            this.rbtnDesdeHasta.Location = new Point(10, 56);
-            this.rbtnDesdeHasta.Text = "Desde fecha → hasta hoy";
-            this.rbtnDesdeHasta.CheckedChanged += new System.EventHandler(this.rbtnDesdeHasta_CheckedChanged);
+            this.rbtnDesdeHasta.Location = new Point(10, 78);
+            this.rbtnDesdeHasta.Text = "Desde fecha → hasta fecha";
+            this.rbtnDesdeHasta.CheckedChanged += new System.EventHandler(this.rbtnFiltro_CheckedChanged);
 
+            // Fecha Inicio
             this.lblFechaInicio.AutoSize = true;
             this.lblFechaInicio.Enabled = false;
             this.lblFechaInicio.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             this.lblFechaInicio.ForeColor = Color.FromArgb(52, 73, 94);
-            this.lblFechaInicio.Location = new Point(10, 84);
+            this.lblFechaInicio.Location = new Point(10, 106);
             this.lblFechaInicio.Text = "Desde:";
 
             this.dtpFechaInicio.Enabled = false;
             this.dtpFechaInicio.Font = new Font("Segoe UI", 9F);
             this.dtpFechaInicio.Format = DateTimePickerFormat.Short;
-            this.dtpFechaInicio.Location = new Point(10, 104);
+            this.dtpFechaInicio.Location = new Point(10, 122);
             this.dtpFechaInicio.Size = new Size(182, 27);
+
+            // Fecha Fin (solo visible para opción 3)
+            this.lblFechaFin.AutoSize = true;
+            this.lblFechaFin.Enabled = false;
+            this.lblFechaFin.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            this.lblFechaFin.ForeColor = Color.FromArgb(52, 73, 94);
+            this.lblFechaFin.Location = new Point(10, 158);
+            this.lblFechaFin.Text = "Hasta:";
+            this.lblFechaFin.Visible = false;
+
+            this.dtpFechaFin.Enabled = false;
+            this.dtpFechaFin.Font = new Font("Segoe UI", 9F);
+            this.dtpFechaFin.Format = DateTimePickerFormat.Short;
+            this.dtpFechaFin.Location = new Point(10, 174);
+            this.dtpFechaFin.Size = new Size(182, 27);
+            this.dtpFechaFin.Visible = false;
 
             // panelAcciones
             this.panelAcciones.Anchor = (AnchorStyles)(AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left);
@@ -256,7 +278,6 @@ namespace CapaPresentacion
             this.panelAcciones.Location = new Point(301, 8);
             this.panelAcciones.Size = new Size(521, 538);
 
-            // Labels y botones del panel de acciones
             SetLabel(this.lblBackupTitulo, "💾 Generar Respaldo", 11F, bold: true, loc: new Point(15, 13));
             SetLabel(this.lblBackupDesc, "Exporta los módulos seleccionados según el alcance configurado.", 8.5F, italic: true, loc: new Point(15, 38));
             SetBtn(this.btnBackupSQL, "💾 Backup SQL (archivo)", Color.FromArgb(142, 68, 173), new Point(15, 66), this.btnBackupSQL_Click);
@@ -271,9 +292,9 @@ namespace CapaPresentacion
             this.panelSep.Size = new Size(305, 1);
 
             SetLabel(this.lblImportTitulo, "📥 Importar / Restaurar", 11F, bold: true, loc: new Point(15, 329));
-            SetLabel(this.lblImportDesc, "Restaura datos desde un respaldo previo. Los registros se reemplazan completamente.", 8.5F, italic: true, loc: new Point(15, 354), size: new Size(490, 36));
+            SetLabel(this.lblImportDesc, "Restaura datos desde un respaldo previo.", 8.5F, italic: true, loc: new Point(15, 354), size: new Size(490, 20));
             SetBtn(this.btnRestaurar, "📥 Importar .SQL", Color.FromArgb(142, 68, 173), new Point(15, 392), this.btnRestaurar_Click);
-            SetLabel(this.lblRestaurarDesc, "Carga y ejecuta un archivo .SQL con restauración completa.", 8F, color: Color.FromArgb(142, 68, 173), loc: new Point(15, 443));
+            SetLabel(this.lblRestaurarDesc, "Carga y ejecuta un archivo .SQL con restauración.", 8F, color: Color.FromArgb(142, 68, 173), loc: new Point(15, 443));
             SetBtn(this.btnImportarCSV, "📤 Importar CSV(s)", Color.FromArgb(230, 126, 34), new Point(15, 464), this.btnImportarCSV_Click);
             SetLabel(this.lblImportarCSVDesc, "Importa archivos .CSV exportados por este sistema.", 8F, color: Color.FromArgb(230, 126, 34), loc: new Point(15, 511));
 
@@ -343,14 +364,13 @@ namespace CapaPresentacion
             this.lblSnapDesc.ForeColor = Color.FromArgb(127, 140, 141);
             this.lblSnapDesc.Location = new Point(15, 35);
             this.lblSnapDesc.Size = new Size(620, 18);
-            this.lblSnapDesc.Text = "Selecciona un snapshot y usa los botones para restaurarlo, renombrarlo o eliminarlo. La restauración reemplaza los datos completamente.";
+            this.lblSnapDesc.Text = "Selecciona un snapshot → Restaurar (elige modo), Renombrar o Eliminar.";
 
-            // Botones del top — sin "Volver a la Actualidad"
             SetBtnSnap(this.btnRestaurarSnapshot, "♻️ Restaurar", Color.FromArgb(142, 68, 173), new Point(648, 12), new Size(155, 40), this.btnRestaurarSnapshot_Click);
             SetBtnSnap(this.btnRenombrarSnapshot, "✏️ Renombrar", Color.FromArgb(52, 152, 219), new Point(811, 12), new Size(150, 40), this.btnRenombrarSnapshot_Click);
             SetBtnSnap(this.btnEliminarSnapshot, "🗑️ Eliminar", Color.FromArgb(231, 76, 60), new Point(969, 12), new Size(150, 40), this.btnEliminarSnapshot_Click);
 
-            // dgvSnapshots — columna izquierda, deja espacio al panel de detalle
+            // dgvSnapshots
             this.dgvSnapshots.AllowUserToAddRows = false;
             this.dgvSnapshots.AllowUserToDeleteRows = false;
             this.dgvSnapshots.Anchor = (AnchorStyles)(AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left);
@@ -372,7 +392,7 @@ namespace CapaPresentacion
             this.dgvSnapshots.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             this.dgvSnapshots.Size = new Size(735, 435);
 
-            // ── panelDetalle — completamente configurado ──────────────────────
+            // ── panelDetalle ──────────────────────────────────────────────────
             this.panelDetalle.Anchor = (AnchorStyles)(AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right);
             this.panelDetalle.BackColor = Color.White;
             this.panelDetalle.BorderStyle = BorderStyle.FixedSingle;
@@ -380,14 +400,12 @@ namespace CapaPresentacion
             this.panelDetalle.Size = new Size(392, 435);
             this.panelDetalle.Visible = false;
 
-            // Título del panel
             this.lblDetTituloInterno.AutoSize = true;
             this.lblDetTituloInterno.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             this.lblDetTituloInterno.ForeColor = Color.FromArgb(52, 73, 94);
             this.lblDetTituloInterno.Location = new Point(12, 10);
             this.lblDetTituloInterno.Text = "📄 Detalle del snapshot";
 
-            // Línea separadora bajo el título
             var lineaSep = new Panel
             {
                 BackColor = Color.FromArgb(220, 220, 220),
@@ -396,24 +414,20 @@ namespace CapaPresentacion
             };
             this.panelDetalle.Controls.Add(lineaSep);
 
-            // Pares etiqueta-valor en el panel de detalle
             int yDet = 40;
-            void AgregarParDetalle(Label lKey, string keyTxt, Label lVal, string valDef,
-                int extraAlto = 0)
+            void AgregarParDetalle(Label lKey, string keyTxt, Label lVal, string valDef, int extraAlto = 0)
             {
                 lKey.AutoSize = true;
                 lKey.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
                 lKey.ForeColor = Color.FromArgb(127, 140, 141);
                 lKey.Location = new Point(12, yDet);
                 lKey.Text = keyTxt;
-
                 lVal.AutoSize = false;
                 lVal.Font = new Font("Segoe UI", 9F);
                 lVal.ForeColor = Color.FromArgb(52, 73, 94);
                 lVal.Location = new Point(12, yDet + 16);
                 lVal.Size = new Size(364, 20 + extraAlto);
                 lVal.Text = valDef;
-
                 yDet += 44 + extraAlto;
             }
 
@@ -423,7 +437,6 @@ namespace CapaPresentacion
             AgregarParDetalle(this.lblDetFiltLabel, "ALCANCE", this.lblDetFiltro, "—");
             AgregarParDetalle(this.lblDetRegLabel, "REGISTROS", this.lblDetRegistros, "—");
 
-            // RichTextBox con el detalle por tabla
             this.lblDetTablasLabel.AutoSize = true;
             this.lblDetTablasLabel.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
             this.lblDetTablasLabel.ForeColor = Color.FromArgb(127, 140, 141);
@@ -440,7 +453,6 @@ namespace CapaPresentacion
             this.rtbDetTablas.Size = new Size(364, 90);
             this.rtbDetTablas.Text = "";
 
-            // Agregar todos los controles al panelDetalle
             this.panelDetalle.Controls.AddRange(new Control[] {
                 this.lblDetTituloInterno,
                 this.lblDetEtqLabel,  this.lblDetEtiqueta,
@@ -471,7 +483,6 @@ namespace CapaPresentacion
             this.Text = "Backup y Restauración";
             this.Load += new System.EventHandler(this.FrmBackup_Load);
 
-            // Reanudar layouts
             this.panelDetalle.ResumeLayout(false);
             this.panelDetalle.PerformLayout();
             this.tabControl.ResumeLayout(false);
@@ -493,7 +504,7 @@ namespace CapaPresentacion
             this.PerformLayout();
         }
 
-        // ── Helpers para reducir repetición ──────────────────────────────────
+        // ── Helpers ───────────────────────────────────────────────────────────
         private void SetLabel(Label lbl, string text, float fontSize,
             bool bold = false, bool italic = false,
             Color? color = null, Point loc = default, Size size = default)
@@ -508,8 +519,7 @@ namespace CapaPresentacion
             else { lbl.AutoSize = false; lbl.Size = size; }
         }
 
-        private void SetBtn(Button btn, string text, Color backColor,
-            Point loc, System.EventHandler onClick)
+        private void SetBtn(Button btn, string text, Color backColor, Point loc, System.EventHandler onClick)
         {
             btn.Text = text;
             btn.BackColor = backColor;
@@ -524,8 +534,7 @@ namespace CapaPresentacion
             btn.Click += onClick;
         }
 
-        private void SetBtnSnap(Button btn, string text, Color backColor,
-            Point loc, Size size, System.EventHandler onClick)
+        private void SetBtnSnap(Button btn, string text, Color backColor, Point loc, Size size, System.EventHandler onClick)
         {
             btn.Text = text;
             btn.BackColor = backColor;
@@ -542,13 +551,9 @@ namespace CapaPresentacion
 
         #endregion
 
-        // ── Declaraciones de campos ───────────────────────────────────────────
-
-        // Encabezado
+        // ── Declaraciones ─────────────────────────────────────────────────────
         private Label lblTitulo;
         private Label lblSubtitulo;
-
-        // TabControl
         private TabControl tabControl;
         private TabPage tabBackup;
         private TabPage tabSnapshots;
@@ -561,10 +566,13 @@ namespace CapaPresentacion
         private FlowLayoutPanel flpModulos;
         private Panel panelFechas;
         private Label lblFechasTitulo;
-        private RadioButton rbtnTodosDatos;    // ← nuevo nombre
-        private RadioButton rbtnDesdeHasta;    // ← nuevo nombre
+        private RadioButton rbtnTodosDatos;
+        private RadioButton rbtnDesdeHastaHoy;   // ← Desde X hasta AHORA
+        private RadioButton rbtnDesdeHasta;       // ← Desde X hasta Y
         private Label lblFechaInicio;
         private DateTimePicker dtpFechaInicio;
+        private Label lblFechaFin;               // ← NUEVO
+        private DateTimePicker dtpFechaFin;      // ← NUEVO
 
         // Tab 1 — acciones
         private Panel panelAcciones;
@@ -594,23 +602,22 @@ namespace CapaPresentacion
         private Button btnRestaurarSnapshot;
         private Button btnRenombrarSnapshot;
         private Button btnEliminarSnapshot;
-        // btnVolverActualidad ELIMINADO
         private DataGridView dgvSnapshots;
 
-        // Tab 2 — panel detalle (todos los campos necesarios en FrmBackup.cs)
+        // Tab 2 — panel detalle
         private Panel panelDetalle;
         private Label lblDetTituloInterno;
         private Label lblDetEtqLabel;
-        private Label lblDetEtiqueta;      // ← accedido desde FrmBackup.cs
+        private Label lblDetEtiqueta;
         private Label lblDetFecLabel;
-        private Label lblDetFecha;         // ← accedido desde FrmBackup.cs
+        private Label lblDetFecha;
         private Label lblDetModLabel;
-        private Label lblDetModulos;       // ← accedido desde FrmBackup.cs
+        private Label lblDetModulos;
         private Label lblDetFiltLabel;
-        private Label lblDetFiltro;        // ← accedido desde FrmBackup.cs
+        private Label lblDetFiltro;
         private Label lblDetRegLabel;
-        private Label lblDetRegistros;     // ← accedido desde FrmBackup.cs
+        private Label lblDetRegistros;
         private Label lblDetTablasLabel;
-        private RichTextBox rtbDetTablas;  // ← accedido desde FrmBackup.cs
+        private RichTextBox rtbDetTablas;
     }
 }
