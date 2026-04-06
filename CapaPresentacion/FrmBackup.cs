@@ -123,14 +123,25 @@ namespace CapaPresentacion
         // ─────────────────────────────────────────────────────────────────────
         // FILTRO FECHAS
         // ─────────────────────────────────────────────────────────────────────
-        private void rbtnTodosDatos_CheckedChanged(object sender, EventArgs e) => ActualizarEstadoFechas();
-        private void rbtnDesdeHasta_CheckedChanged(object sender, EventArgs e) => ActualizarEstadoFechas();
+        // FIX: Este método estaba referenciado en el Designer pero faltaba la implementación
+        private void rbtnFiltro_CheckedChanged(object sender, EventArgs e)
+        {
+            ActualizarEstadoFechas();
+        }
 
         private void ActualizarEstadoFechas()
         {
-            bool necesitaFecha = rbtnDesdeHasta.Checked;
-            lblFechaInicio.Enabled = necesitaFecha;
-            dtpFechaInicio.Enabled = necesitaFecha;
+            // rbtnDesdeHasta = "Desde fecha → hasta fecha"
+            // rbtnDesdeHastaHoy = "Desde fecha → hasta ahora"
+            bool necesitaFechaInicio = rbtnDesdeHasta.Checked || rbtnDesdeHastaHoy.Checked;
+            bool necesitaFechaFin = rbtnDesdeHasta.Checked;
+
+            lblFechaInicio.Enabled = necesitaFechaInicio;
+            dtpFechaInicio.Enabled = necesitaFechaInicio;
+            lblFechaFin.Visible = necesitaFechaFin;
+            dtpFechaFin.Visible = necesitaFechaFin;
+            lblFechaFin.Enabled = necesitaFechaFin;
+            dtpFechaFin.Enabled = necesitaFechaFin;
         }
 
         // ═════════════════════════════════════════════════════════════════════
@@ -235,7 +246,6 @@ namespace CapaPresentacion
                 using (var con = new SqlConnection(CD_Conexion.Conn))
                 {
                     con.Open();
-                    // Usar parámetros con tipo explícito para evitar truncamiento de NVARCHAR(MAX)
                     var cmd = new SqlCommand(
                         $"INSERT INTO [dbo].[{TABLA_SNAPSHOTS}] " +
                         "(etiqueta, modulos, filtro_fecha, total_registros, detalle_tablas, script_sql) " +
@@ -271,27 +281,21 @@ namespace CapaPresentacion
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // GENERACIÓN DEL SCRIPT  (NUEVA LÓGICA — sin GO entre sentencias)
+        // GENERACIÓN DEL SCRIPT
+        // Cada tabla genera un bloque delimitado por marcadores:
+        //   -- INICIO_TABLA:nombre
+        //   ... sentencias ...
+        //   -- FIN_TABLA:nombre
         //
-        // El script usa DELETE+INSERT en lugar de IF EXISTS / UPSERT.
-        // Cada tabla se envuelve en:
-        //   BEGIN TRAN
-        //     DISABLE FK (si aplica)
-        //     DELETE FROM tabla
-        //     SET IDENTITY_INSERT ON
-        //     INSERT INTO tabla (...) VALUES (...)   -- una fila por INSERT
-        //     SET IDENTITY_INSERT OFF
-        //     ENABLE FK
-        //   COMMIT
-        //
-        // Esto garantiza que la restauración es idempotente y completa.
+        // Esto permite que EjecutarScript divida y ejecute cada bloque completo
+        // en lugar de intentar parsear línea a línea (que rompía con BEGIN/END).
         // ─────────────────────────────────────────────────────────────────────
         private int GenerarScriptCompleto(List<string> modulos,
             StringBuilder detalleTablas, out StringBuilder sbScript)
         {
             int totalGlobal = 0;
             sbScript = new StringBuilder();
-            ObtenerRangoFechas(out DateTime? desde);
+            ObtenerRangoFechas(out DateTime? desde, out DateTime? hasta);
 
             sbScript.AppendLine($"-- BACKUP VeterinariaBD — {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
             sbScript.AppendLine($"-- Usuario: {FrmLogin.UsuarioActual}");
@@ -308,7 +312,7 @@ namespace CapaPresentacion
                         if (!tablasIncluidas.Contains(t))
                             tablasIncluidas.Add(t);
 
-            // Ordenar según OrdenRestauracion (las que no aparecen van al final)
+            // Ordenar según OrdenRestauracion
             var tablasOrdenadas = new List<string>();
             foreach (string t in OrdenRestauracion)
                 if (tablasIncluidas.Contains(t))
@@ -317,46 +321,44 @@ namespace CapaPresentacion
                 if (!tablasOrdenadas.Contains(t))
                     tablasOrdenadas.Add(t);
 
-            // Deshabilitar todas las FK al inicio
-            sbScript.AppendLine("-- Deshabilitar restricciones FK");
-            sbScript.AppendLine("EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';");
-            sbScript.AppendLine();
-
             foreach (string tabla in tablasOrdenadas)
             {
-                DataTable dt = ObtenerDatosTablaConFecha(tabla, desde);
+                DataTable dt = ObtenerDatosTablaConFecha(tabla, desde, hasta);
                 int n = dt?.Rows.Count ?? 0;
                 detalleTablas.AppendLine($"{tabla}: {n} registros");
                 totalGlobal += n;
 
-                sbScript.AppendLine($"-- ============ {tabla.ToUpper()} ({n} registros) ============");
-                sbScript.AppendLine($"-- INICIO_TABLA:{tabla}");
-
-                // Verificar si la tabla tiene columna IDENTITY
                 bool tieneIdentity = TieneColumnaIdentity(tabla);
 
-                sbScript.AppendLine($"BEGIN TRY");
-                sbScript.AppendLine($"    BEGIN TRANSACTION;");
-                sbScript.AppendLine($"    DELETE FROM [dbo].[{tabla}];");
+                // Marcador de inicio (usado por EjecutarScript para dividir bloques)
+                sbScript.AppendLine($"-- INICIO_TABLA:{tabla}");
+
+                // Construir el bloque completo de la tabla como una sola transacción
+                var bloque = new StringBuilder();
+                bloque.AppendLine($"BEGIN TRY");
+                bloque.AppendLine($"    BEGIN TRANSACTION;");
+                bloque.AppendLine($"    DELETE FROM [dbo].[{tabla}];");
 
                 if (n > 0 && dt != null)
                 {
                     if (tieneIdentity)
-                        sbScript.AppendLine($"    SET IDENTITY_INSERT [dbo].[{tabla}] ON;");
+                        bloque.AppendLine($"    SET IDENTITY_INSERT [dbo].[{tabla}] ON;");
 
                     foreach (DataRow row in dt.Rows)
-                        sbScript.AppendLine(GenerarInsertRow(tabla, dt.Columns, row));
+                        bloque.AppendLine(GenerarInsertRow(tabla, dt.Columns, row));
 
                     if (tieneIdentity)
-                        sbScript.AppendLine($"    SET IDENTITY_INSERT [dbo].[{tabla}] OFF;");
+                        bloque.AppendLine($"    SET IDENTITY_INSERT [dbo].[{tabla}] OFF;");
                 }
 
-                sbScript.AppendLine($"    COMMIT TRANSACTION;");
-                sbScript.AppendLine($"END TRY");
-                sbScript.AppendLine($"BEGIN CATCH");
-                sbScript.AppendLine($"    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;");
-                sbScript.AppendLine($"    PRINT 'ERROR en tabla {tabla}: ' + ERROR_MESSAGE();");
-                sbScript.AppendLine($"END CATCH");
+                bloque.AppendLine($"    COMMIT TRANSACTION;");
+                bloque.AppendLine($"END TRY");
+                bloque.AppendLine($"BEGIN CATCH");
+                bloque.AppendLine($"    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;");
+                bloque.AppendLine($"    PRINT 'ERROR en {tabla}: ' + ERROR_MESSAGE();");
+                bloque.AppendLine($"END CATCH");
+
+                sbScript.Append(bloque);
                 sbScript.AppendLine($"-- FIN_TABLA:{tabla}");
                 sbScript.AppendLine();
 
@@ -364,16 +366,10 @@ namespace CapaPresentacion
                 System.Windows.Forms.Application.DoEvents();
             }
 
-            // Re-habilitar FK al final
-            sbScript.AppendLine("-- Re-habilitar restricciones FK");
-            sbScript.AppendLine("EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';");
-            sbScript.AppendLine();
             sbScript.AppendLine($"-- FIN — Total registros: {totalGlobal}");
-
             return totalGlobal;
         }
 
-        /// <summary>Genera un INSERT simple para una fila.</summary>
         private string GenerarInsertRow(string tabla, DataColumnCollection cols, DataRow row)
         {
             var names = new List<string>();
@@ -395,7 +391,6 @@ namespace CapaPresentacion
             if (v is DateTime dt) return $"'{dt:yyyy-MM-dd HH:mm:ss.fff}'";
             if (v is decimal || v is int || v is long || v is double || v is float)
                 return Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture);
-            // Cadena de texto: escapar comillas simples
             return $"N'{v.ToString().Replace("'", "''")}'";
         }
 
@@ -529,7 +524,7 @@ namespace CapaPresentacion
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // BOTONES DEL GRID — RESTAURAR
+        // RESTAURAR SNAPSHOT
         // ─────────────────────────────────────────────────────────────────────
         private void btnRestaurarSnapshot_Click(object sender, EventArgs e)
         {
@@ -554,7 +549,6 @@ namespace CapaPresentacion
                 using (var con = new SqlConnection(CD_Conexion.Conn))
                 {
                     con.Open();
-                    // Leer con CommandBehavior.SequentialAccess para NVARCHAR(MAX) grandes
                     var cmd = new SqlCommand(
                         $"SELECT CAST(script_sql AS NVARCHAR(MAX)) FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE id=@id", con);
                     cmd.Parameters.AddWithValue("@id", id);
@@ -583,108 +577,185 @@ namespace CapaPresentacion
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // EJECUTAR SCRIPT  (NUEVA LÓGICA — ejecuta línea a línea dentro de una conexión)
+        // EJECUTAR SCRIPT  — NUEVA IMPLEMENTACIÓN
         //
-        // El script nuevo NO usa GO como separador.
-        // Las sentencias son una por línea (INSERT, DELETE, SET, EXEC, PRINT).
-        // Se ejecutan línea a línea dentro de una sola conexión con FK deshabilitadas.
+        // En lugar de parsear línea a línea (que rompía con BEGIN/END anidados),
+        // ahora divide el script usando los marcadores INICIO_TABLA / FIN_TABLA
+        // que el generador ya coloca, y ejecuta cada bloque de una tabla como
+        // una sola llamada a SqlCommand. Esto garantiza:
+        //   • Las transacciones BEGIN/END TRY/CATCH funcionan íntegras.
+        //   • SET IDENTITY_INSERT se aplica dentro de la misma conexión/bloque.
+        //   • Los errores de una tabla no abortan las demás.
         // ─────────────────────────────────────────────────────────────────────
         private void EjecutarScript(string script)
         {
+            // Dividir el script en bloques usando los marcadores de tabla
+            var bloques = ExtraerBloquesPorTabla(script);
+
+            progressBar.Maximum = Math.Max(1, bloques.Count);
+            progressBar.Value = 0;
+            progressBar.Visible = true;
+
+            int ejecutados = 0, errores = 0;
+
             using (var con = new SqlConnection(CD_Conexion.Conn))
             {
                 con.Open();
                 con.InfoMessage += (s, ev) => AgregarLog($"   ℹ️ {ev.Message}");
 
-                // Primero deshabilitar FK (por si el script no lo incluye)
-                new SqlCommand("EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';", con)
-                { CommandTimeout = 60 }.ExecuteNonQuery();
-
-                string[] lineas = script.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-
-                int ejecutadas = 0, errores = 0;
-                progressBar.Maximum = lineas.Length;
-                progressBar.Value = 0;
-
-                // Acumular sentencias compuestas (BEGIN TRY ... END CATCH)
-                var bloque = new StringBuilder();
-                int nivelBegin = 0;
-
-                foreach (string linea in lineas)
+                // Paso 1: deshabilitar todas las FK para evitar errores de orden
+                try
                 {
-                    string trim = linea.Trim();
+                    new SqlCommand(
+                        "EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';",
+                        con)
+                    { CommandTimeout = 60 }.ExecuteNonQuery();
+                    AgregarLog("🔓 Restricciones FK deshabilitadas");
+                }
+                catch (Exception ex)
+                {
+                    AgregarLog($"⚠️ No se pudieron deshabilitar FK: {ex.Message}");
+                }
 
-                    // Ignorar comentarios y líneas vacías como sentencias independientes,
-                    // pero incluirlos dentro de un bloque en curso
-                    if (nivelBegin > 0)
+                // Paso 2: ejecutar cada bloque de tabla
+                foreach (var kvp in bloques)
+                {
+                    string nombreTabla = kvp.Key;
+                    string bloque = kvp.Value;
+
+                    try
                     {
-                        bloque.AppendLine(linea);
-                        string upper = trim.ToUpper();
-                        if (upper.StartsWith("BEGIN")) nivelBegin++;
-                        if (upper == "END TRY" || upper == "END CATCH" || upper == "END;")
-                        {
-                            nivelBegin--;
-                            if (nivelBegin == 0)
-                            {
-                                // Ejecutar el bloque completo
-                                EjecutarSentencia(con, bloque.ToString(), ref ejecutadas, ref errores);
-                                bloque.Clear();
-                            }
-                        }
+                        var cmd = new SqlCommand(bloque, con) { CommandTimeout = 300 };
+                        cmd.ExecuteNonQuery();
+                        ejecutados++;
+                        AgregarLog($"   ✅ {nombreTabla}");
                     }
-                    else
+                    catch (SqlException ex)
                     {
-                        if (string.IsNullOrWhiteSpace(trim) || trim.StartsWith("--"))
-                        {
-                            progressBar.Value = Math.Min(progressBar.Value + 1, progressBar.Maximum);
-                            System.Windows.Forms.Application.DoEvents();
-                            continue;
-                        }
-
-                        string upper = trim.ToUpper();
-
-                        if (upper.StartsWith("BEGIN TRY"))
-                        {
-                            nivelBegin = 1;
-                            bloque.Clear();
-                            bloque.AppendLine(linea);
-                        }
-                        else
-                        {
-                            // Sentencia de una línea (INSERT, DELETE, SET, EXEC, PRINT, USE)
-                            EjecutarSentencia(con, trim, ref ejecutadas, ref errores);
-                        }
+                        errores++;
+                        AgregarLog($"   ❌ {nombreTabla}: {ex.Message.Substring(0, Math.Min(200, ex.Message.Length))}");
                     }
 
                     progressBar.Value = Math.Min(progressBar.Value + 1, progressBar.Maximum);
                     System.Windows.Forms.Application.DoEvents();
                 }
 
-                // Re-habilitar FK
+                // Paso 3: re-habilitar FK
                 try
                 {
-                    new SqlCommand("EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';", con)
+                    new SqlCommand(
+                        "EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';",
+                        con)
                     { CommandTimeout = 60 }.ExecuteNonQuery();
+                    AgregarLog("🔒 Restricciones FK re-habilitadas");
                 }
-                catch (Exception ex) { AgregarLog($"⚠️ Al re-habilitar FK: {ex.Message}"); }
-
-                AgregarLog($"✅ Script ejecutado: {ejecutadas} sentencias | {errores} errores ignorados");
+                catch (Exception ex)
+                {
+                    AgregarLog($"⚠️ Al re-habilitar FK: {ex.Message}");
+                }
             }
+
+            progressBar.Visible = false;
+            AgregarLog($"✅ Script ejecutado: {ejecutados} tablas OK | {errores} con errores");
+
+            if (errores > 0)
+                MessageBox.Show(
+                    $"La restauración finalizó con {errores} error(es).\n\n" +
+                    "Revisa el log para más detalles. Algunas tablas pueden no haberse restaurado.",
+                    "Restauración con advertencias", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
-        private void EjecutarSentencia(SqlConnection con, string sql, ref int ejecutadas, ref int errores)
+        /// <summary>
+        /// Divide el script en pares (nombreTabla, bloqueSQL) usando los marcadores
+        /// -- INICIO_TABLA:nombre  y  -- FIN_TABLA:nombre
+        /// que GenerarScriptCompleto ya inserta.
+        /// </summary>
+        private List<KeyValuePair<string, string>> ExtraerBloquesPorTabla(string script)
         {
-            if (string.IsNullOrWhiteSpace(sql)) return;
-            try
+            var resultado = new List<KeyValuePair<string, string>>();
+            string[] lineas = script.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+
+            string tablaActual = null;
+            var bloqueActual = new StringBuilder();
+
+            foreach (string linea in lineas)
             {
-                new SqlCommand(sql, con) { CommandTimeout = 120 }.ExecuteNonQuery();
-                ejecutadas++;
+                string trim = linea.Trim();
+
+                if (trim.StartsWith("-- INICIO_TABLA:"))
+                {
+                    tablaActual = trim.Substring("-- INICIO_TABLA:".Length).Trim();
+                    bloqueActual = new StringBuilder();
+                }
+                else if (trim.StartsWith("-- FIN_TABLA:") && tablaActual != null)
+                {
+                    string bloqueTexto = bloqueActual.ToString().Trim();
+                    if (!string.IsNullOrWhiteSpace(bloqueTexto))
+                        resultado.Add(new KeyValuePair<string, string>(tablaActual, bloqueTexto));
+                    tablaActual = null;
+                    bloqueActual = new StringBuilder();
+                }
+                else if (tablaActual != null)
+                {
+                    // Ignorar líneas de comentario puras dentro del bloque
+                    // (se puede dejar; SQL las ignora igual)
+                    bloqueActual.AppendLine(linea);
+                }
             }
-            catch (SqlException ex)
+
+            // Si el script no tiene marcadores (archivo externo antiguo), 
+            // caer en el modo legado línea por línea
+            if (resultado.Count == 0)
             {
-                errores++;
-                AgregarLog($"  ⚠️ Error SQL ({ex.Number}): {ex.Message.Substring(0, Math.Min(120, ex.Message.Length))}");
+                AgregarLog("⚠️ Script sin marcadores de tabla — usando modo legado (línea a línea)");
+                resultado.Add(new KeyValuePair<string, string>("(script completo)", script));
             }
+
+            return resultado;
+        }
+
+        /// <summary>
+        /// Modo legado: ejecuta el script completo línea a línea.
+        /// Se usa solo para archivos .SQL exportados por versiones anteriores del sistema.
+        /// </summary>
+        private void EjecutarScriptLegado(string script, SqlConnection con)
+        {
+            string[] lineas = script.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            int ejecutadas = 0, errores = 0;
+
+            // Agrupar por bloques GO
+            var bloques = new List<string>();
+            var bloque = new StringBuilder();
+
+            foreach (string linea in lineas)
+            {
+                if (linea.Trim().Equals("GO", StringComparison.OrdinalIgnoreCase))
+                {
+                    string t = bloque.ToString().Trim();
+                    if (!string.IsNullOrWhiteSpace(t)) bloques.Add(t);
+                    bloque.Clear();
+                }
+                else
+                    bloque.AppendLine(linea);
+            }
+            string ultimo = bloque.ToString().Trim();
+            if (!string.IsNullOrWhiteSpace(ultimo)) bloques.Add(ultimo);
+
+            foreach (string b in bloques)
+            {
+                if (string.IsNullOrWhiteSpace(b) || b.TrimStart().StartsWith("--")) continue;
+                try
+                {
+                    new SqlCommand(b, con) { CommandTimeout = 120 }.ExecuteNonQuery();
+                    ejecutadas++;
+                }
+                catch (SqlException ex)
+                {
+                    errores++;
+                    AgregarLog($"  ⚠️ {ex.Message.Substring(0, Math.Min(150, ex.Message.Length))}");
+                }
+            }
+            AgregarLog($"   Modo legado: {ejecutadas} bloques OK | {errores} errores");
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -775,7 +846,7 @@ namespace CapaPresentacion
                 SetBusy(btnBackupCSV, "📊 Exportar CSV", "⏳ Exportando...", modulos.Count);
                 string carpeta = Path.Combine(dlg.SelectedPath, $"VetBackup_CSV_{DateTime.Now:yyyyMMdd_HHmm}");
                 Directory.CreateDirectory(carpeta);
-                ObtenerRangoFechas(out DateTime? desde);
+                ObtenerRangoFechas(out DateTime? desde, out DateTime? hasta);
                 int total = 0, archivos = 0;
 
                 foreach (string modulo in modulos)
@@ -783,7 +854,7 @@ namespace CapaPresentacion
                     if (!ModulosTablas.TryGetValue(modulo, out string[] tablas)) continue;
                     foreach (string tabla in tablas)
                     {
-                        DataTable dt = ObtenerDatosTablaConFecha(tabla, desde);
+                        DataTable dt = ObtenerDatosTablaConFecha(tabla, desde, hasta);
                         if (dt == null || dt.Rows.Count == 0) continue;
                         EscribirCSV(dt, Path.Combine(carpeta, $"{tabla}.csv"));
                         total += dt.Rows.Count; archivos++;
@@ -805,10 +876,12 @@ namespace CapaPresentacion
         // ═════════════════════════════════════════════════════════════════════
         private void btnRestaurar_Click(object sender, EventArgs e)
         {
-            var dlg = new System.Windows.Forms.OpenFileDialog { Title = "Archivo de respaldo", Filter = "Archivo SQL|*.sql|Todos|*.*" };
+            var dlg = new System.Windows.Forms.OpenFileDialog
+            { Title = "Archivo de respaldo", Filter = "Archivo SQL|*.sql|Todos|*.*" };
             if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            if (MessageBox.Show($"⚠️ La importación reemplazará datos existentes.\n\nArchivo: {Path.GetFileName(dlg.FileName)}\n\n¿Continuar?",
+            if (MessageBox.Show(
+                    $"⚠️ La importación reemplazará datos existentes.\n\nArchivo: {Path.GetFileName(dlg.FileName)}\n\n¿Continuar?",
                     "Confirmar restauración", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
                 != System.Windows.Forms.DialogResult.Yes) return;
 
@@ -819,7 +892,8 @@ namespace CapaPresentacion
                 EjecutarScript(contenido);
                 SetIdle(btnRestaurar, "📥 Importar .SQL");
                 AgregarLog($"✅ Restaurado desde: {Path.GetFileName(dlg.FileName)}");
-                MessageBox.Show($"✅ Restauración completada.\nArchivo: {Path.GetFileName(dlg.FileName)}",
+                MessageBox.Show(
+                    $"✅ Restauración completada.\nArchivo: {Path.GetFileName(dlg.FileName)}",
                     "Restauración completada", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex) { SetIdle(btnRestaurar, "📥 Importar .SQL"); MsgErr(ex.Message); AgregarLog("❌ " + ex.Message); }
@@ -830,17 +904,20 @@ namespace CapaPresentacion
         // ═════════════════════════════════════════════════════════════════════
         private void btnImportarCSV_Click(object sender, EventArgs e)
         {
-            var dlg = new System.Windows.Forms.OpenFileDialog { Title = "Importar CSV", Filter = "CSV|*.csv", Multiselect = true };
+            var dlg = new System.Windows.Forms.OpenFileDialog
+            { Title = "Importar CSV", Filter = "CSV|*.csv", Multiselect = true };
             if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            if (MessageBox.Show($"Se importarán {dlg.FileNames.Length} archivo(s). Registros duplicados serán omitidos.\n\n¿Continuar?",
+            if (MessageBox.Show(
+                    $"Se importarán {dlg.FileNames.Length} archivo(s). Registros duplicados serán omitidos.\n\n¿Continuar?",
                     "Confirmar importación", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
                 != System.Windows.Forms.DialogResult.Yes) return;
 
             try
             {
                 SetBusy(btnImportarCSV, "📤 Importar CSV", "⏳ Importando...", dlg.FileNames.Length);
-                int total = 0; var errores = new List<string>();
+                int total = 0;
+                var errores = new List<string>();
 
                 foreach (string archivo in dlg.FileNames)
                 {
@@ -887,13 +964,18 @@ namespace CapaPresentacion
                 { "categoria_producto", "fecha_creacion" },
             };
 
-        private DataTable ObtenerDatosTablaConFecha(string tabla, DateTime? desde)
+        // FIX: parámetro hasta agregado para soportar rbtnDesdeHasta correctamente
+        private DataTable ObtenerDatosTablaConFecha(string tabla, DateTime? desde, DateTime? hasta)
         {
             try
             {
                 string where = "";
                 if (desde.HasValue && ColumnasFecha.TryGetValue(tabla, out string col))
+                {
                     where = $" WHERE [{col}] >= '{desde.Value:yyyy-MM-dd}'";
+                    if (hasta.HasValue)
+                        where += $" AND [{col}] <= '{hasta.Value:yyyy-MM-dd 23:59:59}'";
+                }
 
                 var dt = new DataTable(tabla);
                 using (var con = new SqlConnection(CD_Conexion.Conn))
@@ -974,14 +1056,30 @@ namespace CapaPresentacion
             campos.Add(f.ToString()); return campos.ToArray();
         }
 
-        private void ObtenerRangoFechas(out DateTime? desde)
+        // FIX: firma actualizada para recibir tanto 'desde' como 'hasta'
+        private void ObtenerRangoFechas(out DateTime? desde, out DateTime? hasta)
         {
-            desde = rbtnDesdeHasta.Checked ? dtpFechaInicio.Value.Date : (DateTime?)null;
+            if (rbtnDesdeHastaHoy.Checked)
+            {
+                desde = dtpFechaInicio.Value.Date;
+                hasta = null; // hasta hoy (sin límite superior)
+            }
+            else if (rbtnDesdeHasta.Checked)
+            {
+                desde = dtpFechaInicio.Value.Date;
+                hasta = dtpFechaFin.Value.Date;
+            }
+            else
+            {
+                desde = null;
+                hasta = null;
+            }
         }
 
         private string ObtenerDescripcionFiltroFecha()
         {
-            if (rbtnDesdeHasta.Checked) return $"Desde {dtpFechaInicio.Value:dd/MM/yyyy} hasta hoy";
+            if (rbtnDesdeHastaHoy.Checked) return $"Desde {dtpFechaInicio.Value:dd/MM/yyyy} hasta ahora";
+            if (rbtnDesdeHasta.Checked) return $"Desde {dtpFechaInicio.Value:dd/MM/yyyy} hasta {dtpFechaFin.Value:dd/MM/yyyy}";
             return "Todos los datos actuales";
         }
 
