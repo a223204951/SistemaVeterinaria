@@ -20,7 +20,7 @@ namespace CapaPresentacion
                 { "Clientes",    new[] { "cliente",   "auditoria_cliente" } },
                 { "Mascotas",    new[] { "mascota" } },
                 { "Empleados",   new[] { "empleado" } },
-                { "Usuarios",    new[] { "usuario",   "permisos_rol" } },
+                { "Usuarios",    new[] { "usuario",   "permisos_rol", "sesiones_usuario" } },
                 { "Productos",   new[] { "categoria_producto", "producto", "historial_precios", "movimiento_stock" } },
                 { "Proveedores", new[] { "proveedor", "proveedor_producto" } },
                 { "Ventas",      new[] { "venta",     "detalle_venta" } },
@@ -28,19 +28,18 @@ namespace CapaPresentacion
                 { "Citas",       new[] { "cita",      "consulta", "pago" } },
             };
 
-        // Tablas completamente protegidas — nunca se tocan
+        // Solo la tabla interna de snapshots está protegida — sesiones_usuario ya es exportable
         private static readonly HashSet<string> TablasProtegidas =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "_vet_snapshots",
-                "sesiones_usuario"   // protegida: no puede ni vaciarse ni importarse
+                "_vet_snapshots"
             };
 
         // Orden de restauración que respeta FK
         private static readonly List<string> OrdenRestauracion = new List<string>
         {
             "categoria_producto", "proveedor", "cliente", "empleado", "usuario",
-            "permisos_rol", "mascota", "producto", "proveedor_producto",
+            "permisos_rol", "sesiones_usuario", "mascota", "producto", "proveedor_producto",
             "cita", "consulta", "pago",
             "compra", "detalle_compra",
             "venta", "detalle_venta",
@@ -1041,8 +1040,10 @@ namespace CapaPresentacion
 
             if (MessageBox.Show(
                     $"Se importarán {dlg.FileNames.Length} archivo(s).\n\n" +
+                    "• Registros con el mismo ID serán ACTUALIZADOS.\n" +
+                    "• Registros nuevos serán INSERTADOS.\n" +
+                    "• Registros que ya no existan en el CSV serán ELIMINADOS de la tabla.\n" +
                     "• Se deshabilitarán temporalmente las restricciones FK.\n" +
-                    "• Registros duplicados serán omitidos.\n" +
                     "• Se guardará snapshot para poder deshacer.\n\n¿Continuar?",
                     "Confirmar importación", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
                 != DialogResult.Yes) return;
@@ -1104,7 +1105,7 @@ namespace CapaPresentacion
                 SetIdle(btnImportarCSV, "📤 Importar CSV");
                 RefrescarListaSnapshots();
 
-                string msg2 = $"✅ Importación completada.\nRegistros importados: {total}";
+                string msg2 = $"✅ Importación completada.\nRegistros procesados: {total}";
                 if (errores.Count > 0) msg2 += $"\n\n⚠️ Errores ({errores.Count}):\n" + string.Join("\n", errores);
                 msg2 += "\n\nPuedes deshacer con  ↩️ Deshacer última operación.";
                 MessageBox.Show(msg2, "Importación CSV", MessageBoxButtons.OK,
@@ -1204,7 +1205,10 @@ namespace CapaPresentacion
             File.WriteAllText(ruta, sb.ToString(), Encoding.UTF8);
         }
 
-        // FIX #4 — ImportarDesdeCSV acepta una conexión ya abierta
+        // ImportarDesdeCSV — lógica UPSERT + DELETE
+        // ─ Actualiza registros existentes (mismo PK)
+        // ─ Inserta registros nuevos
+        // ─ Elimina registros que ya no están en el CSV
         private int ImportarDesdeCSV(string archivo, SqlConnection con)
         {
             string tabla = Path.GetFileNameWithoutExtension(archivo);
@@ -1223,43 +1227,109 @@ namespace CapaPresentacion
             if (lineas.Length < 2) return 0;
 
             string[] headers = ParsearCSV(lineas[0]);
-            int importados = 0;
+            if (headers.Length == 0) return 0;
 
-            // IDENTITY_INSERT — solo si la tabla tiene columna identity
+            string colPK = headers[0];   // primera columna = PK (convención de exportación)
             bool hayIdentity = TieneColumnaIdentityCon(tabla, con);
-            if (hayIdentity)
-            {
-                try
-                {
-                    new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] ON", con).ExecuteNonQuery();
-                }
-                catch { hayIdentity = false; }
-            }
 
+            // ── Paso 1: Leer todos los registros del CSV en memoria ───────────
+            // Estructura: pkValor → (valores de todas las columnas)
+            var csvRows = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
             for (int i = 1; i < lineas.Length; i++)
             {
                 if (string.IsNullOrWhiteSpace(lineas[i])) continue;
                 string[] vals = ParsearCSV(lineas[i]);
                 if (vals.Length != headers.Length) continue;
+                string pk = vals[0];
+                if (!string.IsNullOrEmpty(pk))
+                    csvRows[pk] = vals;   // si hay PK duplicada en el CSV, gana la última
+            }
 
-                var cn = new List<string>();
-                var pn = new List<string>();
-                for (int j = 0; j < headers.Length; j++) { cn.Add($"[{headers[j]}]"); pn.Add($"@p{j}"); }
+            if (csvRows.Count == 0) return 0;
 
-                var cmd = new SqlCommand(
-                    $"IF NOT EXISTS(SELECT 1 FROM [dbo].[{tabla}] WHERE [{headers[0]}]=@p0)\r\n" +
-                    $"  INSERT INTO [dbo].[{tabla}] ({string.Join(",", cn)}) VALUES ({string.Join(",", pn)})",
-                    con);
+            // ── Paso 2: Obtener PKs actuales en BD ───────────────────────────
+            var pksBD = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var cmdPKs = new SqlCommand(
+                    $"SELECT CAST([{colPK}] AS NVARCHAR(MAX)) FROM [dbo].[{tabla}]", con);
+                cmdPKs.CommandTimeout = 60;
+                using (var reader = cmdPKs.ExecuteReader())
+                    while (reader.Read())
+                        if (!reader.IsDBNull(0))
+                            pksBD.Add(reader.GetString(0));
+            }
+            catch { /* si falla, continuamos sin eliminar */ }
+
+            // ── Paso 3: IDENTITY_INSERT ON ───────────────────────────────────
+            if (hayIdentity)
+                try { new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] ON", con).ExecuteNonQuery(); }
+                catch { hayIdentity = false; }
+
+            int upserted = 0, eliminados = 0;
+
+            var cn = new List<string>();
+            var pn = new List<string>();
+            for (int j = 0; j < headers.Length; j++) { cn.Add($"[{headers[j]}]"); pn.Add($"@p{j}"); }
+
+            string colsList = string.Join(", ", cn);
+            string paramsList = string.Join(", ", pn);
+
+            // SET para UPDATE (todas las columnas excepto la PK)
+            var setClauses = new List<string>();
+            for (int j = 1; j < headers.Length; j++)
+                setClauses.Add($"[{headers[j]}] = @p{j}");
+            string setList = string.Join(", ", setClauses);
+
+            // ── Paso 4: UPSERT fila a fila ────────────────────────────────────
+            foreach (var kvp in csvRows)
+            {
+                string pkValor = kvp.Key;
+                string[] vals = kvp.Value;
+
+                // Determinar si existe (UPDATE) o no (INSERT)
+                bool existe = pksBD.Contains(pkValor);
+
+                string sql = existe
+                    ? $"UPDATE [dbo].[{tabla}] SET {setList} WHERE [{colPK}] = @p0"
+                    : $"INSERT INTO [dbo].[{tabla}] ({colsList}) VALUES ({paramsList})";
+
+                var cmd = new SqlCommand(sql, con) { CommandTimeout = 30 };
                 for (int j = 0; j < vals.Length; j++)
                     cmd.Parameters.AddWithValue($"@p{j}",
                         string.IsNullOrEmpty(vals[j]) ? (object)DBNull.Value : (object)vals[j]);
-                try { cmd.ExecuteNonQuery(); importados++; } catch { }
+
+                try { cmd.ExecuteNonQuery(); upserted++; } catch { /* log individual omitido */ }
             }
 
+            // ── Paso 5: DELETE — eliminar PKs que estaban en BD pero no en CSV ─
+            // Solo se hace si el CSV tiene al menos 1 registro (evitar vaciado accidental)
+            if (csvRows.Count > 0)
+            {
+                foreach (string pkBD in pksBD)
+                {
+                    if (!csvRows.ContainsKey(pkBD))
+                    {
+                        try
+                        {
+                            var cmdDel = new SqlCommand(
+                                $"DELETE FROM [dbo].[{tabla}] WHERE [{colPK}] = @pk", con);
+                            cmdDel.Parameters.AddWithValue("@pk", pkBD);
+                            cmdDel.CommandTimeout = 30;
+                            cmdDel.ExecuteNonQuery();
+                            eliminados++;
+                        }
+                        catch { /* FK puede bloquear — se ignora */ }
+                    }
+                }
+            }
+
+            // ── Paso 6: IDENTITY_INSERT OFF ──────────────────────────────────
             if (hayIdentity)
                 try { new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] OFF", con).ExecuteNonQuery(); } catch { }
 
-            return importados;
+            AgregarLog($"      ↳ {tabla}: {upserted} upserted, {eliminados} eliminados");
+            return upserted;
         }
 
         // Versión de TieneColumnaIdentity que usa una conexión ya abierta
