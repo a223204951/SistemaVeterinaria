@@ -20,7 +20,7 @@ namespace CapaPresentacion
                 { "Clientes",    new[] { "cliente",   "auditoria_cliente" } },
                 { "Mascotas",    new[] { "mascota" } },
                 { "Empleados",   new[] { "empleado" } },
-                { "Usuarios",    new[] { "usuario",   "sesiones_usuario", "permisos_rol" } },
+                { "Usuarios",    new[] { "usuario",   "permisos_rol" } },
                 { "Productos",   new[] { "categoria_producto", "producto", "historial_precios", "movimiento_stock" } },
                 { "Proveedores", new[] { "proveedor", "proveedor_producto" } },
                 { "Ventas",      new[] { "venta",     "detalle_venta" } },
@@ -28,11 +28,12 @@ namespace CapaPresentacion
                 { "Citas",       new[] { "cita",      "consulta", "pago" } },
             };
 
+        // Tablas completamente protegidas — nunca se tocan
         private static readonly HashSet<string> TablasProtegidas =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
                 "_vet_snapshots",
-                "sesiones_usuario"
+                "sesiones_usuario"   // protegida: no puede ni vaciarse ni importarse
             };
 
         // Orden de restauración que respeta FK
@@ -48,6 +49,9 @@ namespace CapaPresentacion
         };
 
         private const string TABLA_SNAPSHOTS = "_vet_snapshots";
+
+        // Etiqueta reservada para el snapshot "deshacer"
+        private const string ETIQUETA_DESHACER = "__UNDO_SNAPSHOT__";
 
         public FrmBackup() { InitializeComponent(); }
 
@@ -66,9 +70,79 @@ namespace CapaPresentacion
             dtpFechaInicio.Value = DateTime.Now.AddMonths(-1);
             CargarModulos();
             ActualizarEstadoFechas();
-            GarantizarTablaSnapshots();
+            GarantizarTablaSnapshots();   // FIX: ya no da timeout
             RefrescarListaSnapshots();
             dgvSnapshots.SelectionChanged += DgvSnapshots_SelectionChanged;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // FIX #1 — GarantizarTablaSnapshots  (sin timeout)
+        // El error original ocurría porque el SP interno sp_MSforeachtable
+        // tardaba mucho.  Ahora usamos IF NOT EXISTS directo.
+        // ─────────────────────────────────────────────────────────────────────
+        private void GarantizarTablaSnapshots()
+        {
+            try
+            {
+                using (var con = new SqlConnection(CD_Conexion.Conn))
+                {
+                    con.Open();
+
+                    // Crear tabla si no existe — una sola sentencia, sin SP auxiliares
+                    var cmd = new SqlCommand(@"
+                        IF NOT EXISTS (
+                            SELECT 1 FROM sys.tables
+                            WHERE name = '" + TABLA_SNAPSHOTS + @"'
+                              AND SCHEMA_ID(N'dbo') = schema_id
+                        )
+                        CREATE TABLE [dbo].[" + TABLA_SNAPSHOTS + @"] (
+                            [id]              INT IDENTITY(1,1) PRIMARY KEY,
+                            [etiqueta]        NVARCHAR(100) NOT NULL,
+                            [fecha_creacion]  DATETIME      NOT NULL DEFAULT GETDATE(),
+                            [modulos]         NVARCHAR(500) NOT NULL,
+                            [filtro_fecha]    NVARCHAR(100) NOT NULL DEFAULT 'Todos los datos actuales',
+                            [total_registros] INT           NOT NULL DEFAULT 0,
+                            [detalle_tablas]  NVARCHAR(MAX) NULL,
+                            [script_sql]      NVARCHAR(MAX) NOT NULL
+                        );", con);
+                    cmd.CommandTimeout = 30;
+                    cmd.ExecuteNonQuery();
+
+                    // Agregar columnas opcionales si la tabla ya existía sin ellas
+                    AgregarColumnasSiNoExisten(con);
+                }
+            }
+            catch (Exception ex)
+            {
+                AgregarLog($"⚠️ GarantizarTablaSnapshots: {ex.Message}");
+            }
+        }
+
+        private void AgregarColumnasSiNoExisten(SqlConnection con)
+        {
+            var columnas = new[]
+            {
+                ("filtro_fecha",    "NVARCHAR(100) NOT NULL DEFAULT 'Todos los datos actuales'"),
+                ("total_registros", "INT NOT NULL DEFAULT 0"),
+                ("detalle_tablas",  "NVARCHAR(MAX) NULL"),
+            };
+            foreach (var (col, def) in columnas)
+            {
+                try
+                {
+                    var cmd = new SqlCommand($@"
+                        IF NOT EXISTS (
+                            SELECT 1 FROM sys.columns
+                            WHERE object_id = OBJECT_ID(N'dbo.{TABLA_SNAPSHOTS}')
+                              AND name = '{col}'
+                        )
+                        ALTER TABLE [dbo].[{TABLA_SNAPSHOTS}] ADD [{col}] {def};",
+                        con);
+                    cmd.CommandTimeout = 15;
+                    cmd.ExecuteNonQuery();
+                }
+                catch { /* ignora si la columna ya existe */ }
+            }
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -123,7 +197,6 @@ namespace CapaPresentacion
         // ─────────────────────────────────────────────────────────────────────
         // FILTRO FECHAS
         // ─────────────────────────────────────────────────────────────────────
-        // FIX: Este método estaba referenciado en el Designer pero faltaba la implementación
         private void rbtnFiltro_CheckedChanged(object sender, EventArgs e)
         {
             ActualizarEstadoFechas();
@@ -131,8 +204,6 @@ namespace CapaPresentacion
 
         private void ActualizarEstadoFechas()
         {
-            // rbtnDesdeHasta = "Desde fecha → hasta fecha"
-            // rbtnDesdeHastaHoy = "Desde fecha → hasta ahora"
             bool necesitaFechaInicio = rbtnDesdeHasta.Checked || rbtnDesdeHastaHoy.Checked;
             bool necesitaFechaFin = rbtnDesdeHasta.Checked;
 
@@ -152,14 +223,14 @@ namespace CapaPresentacion
             List<string> modulos = ObtenerModulosSeleccionados();
             if (modulos.Count == 0) { MsgWarn("Seleccione al menos un módulo."); return; }
 
-            var dlg = new System.Windows.Forms.SaveFileDialog
+            var dlg = new SaveFileDialog
             {
                 Title = "Guardar respaldo SQL",
                 Filter = "Archivo SQL|*.sql",
                 FileName = $"VeterinariaBD_Backup_{DateTime.Now:yyyyMMdd_HHmm}.sql",
                 DefaultExt = "sql"
             };
-            if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            if (dlg.ShowDialog() != DialogResult.OK) return;
 
             try
             {
@@ -184,47 +255,6 @@ namespace CapaPresentacion
         // ═════════════════════════════════════════════════════════════════════
         // B) SNAPSHOT AUTOMÁTICO
         // ═════════════════════════════════════════════════════════════════════
-        private void GarantizarTablaSnapshots()
-        {
-            try
-            {
-                using (var con = new SqlConnection(CD_Conexion.Conn))
-                {
-                    con.Open();
-                    new SqlCommand($@"
-                        IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='{TABLA_SNAPSHOTS}')
-                        CREATE TABLE [dbo].[{TABLA_SNAPSHOTS}] (
-                            [id]              INT IDENTITY(1,1) PRIMARY KEY,
-                            [etiqueta]        NVARCHAR(100) NOT NULL,
-                            [fecha_creacion]  DATETIME      NOT NULL DEFAULT GETDATE(),
-                            [modulos]         NVARCHAR(500) NOT NULL,
-                            [filtro_fecha]    NVARCHAR(100) NOT NULL DEFAULT 'Todos los datos actuales',
-                            [total_registros] INT           NOT NULL DEFAULT 0,
-                            [detalle_tablas]  NVARCHAR(MAX) NULL,
-                            [script_sql]      NVARCHAR(MAX) NOT NULL
-                        );", con).ExecuteNonQuery();
-
-                    AgregarColumnasSiNoExisten(con);
-                }
-            }
-            catch (Exception ex) { AgregarLog($"⚠️ GarantizarTablaSnapshots: {ex.Message}"); }
-        }
-
-        private void AgregarColumnasSiNoExisten(SqlConnection con)
-        {
-            var columnas = new[]
-            {
-                ("filtro_fecha",    "NVARCHAR(100) NOT NULL DEFAULT 'Todos los datos actuales'"),
-                ("total_registros", "INT NOT NULL DEFAULT 0"),
-                ("detalle_tablas",  "NVARCHAR(MAX) NULL"),
-            };
-            foreach (var (col, def) in columnas)
-                new SqlCommand($@"IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
-                                  WHERE TABLE_NAME='{TABLA_SNAPSHOTS}' AND COLUMN_NAME='{col}')
-                                  ALTER TABLE [dbo].[{TABLA_SNAPSHOTS}] ADD [{col}] {def};",
-                    con).ExecuteNonQuery();
-        }
-
         private void btnSnapshotAuto_Click(object sender, EventArgs e)
         {
             List<string> modulos = ObtenerModulosSeleccionados();
@@ -236,41 +266,11 @@ namespace CapaPresentacion
             try
             {
                 SetBusy(btnSnapshotAuto, "📸 Snapshot Automático", "⏳ Guardando...", modulos.Count);
-
-                var detalle = new StringBuilder();
-                int totalRegistros = GenerarScriptCompleto(modulos, detalle, out StringBuilder sbScript);
-                string filtroDesc = ObtenerDescripcionFiltroFecha();
-                string modulosStr = string.Join(", ", modulos);
-                string scriptTexto = sbScript.ToString();
-
-                using (var con = new SqlConnection(CD_Conexion.Conn))
-                {
-                    con.Open();
-                    var cmd = new SqlCommand(
-                        $"INSERT INTO [dbo].[{TABLA_SNAPSHOTS}] " +
-                        "(etiqueta, modulos, filtro_fecha, total_registros, detalle_tablas, script_sql) " +
-                        "VALUES (@et, @mod, @filtro, @total, @det, @sql)", con);
-                    cmd.CommandTimeout = 300;
-
-                    cmd.Parameters.Add("@et", SqlDbType.NVarChar, 100).Value = etiqueta;
-                    cmd.Parameters.Add("@mod", SqlDbType.NVarChar, 500).Value = modulosStr;
-                    cmd.Parameters.Add("@filtro", SqlDbType.NVarChar, 100).Value = filtroDesc;
-                    cmd.Parameters.Add("@total", SqlDbType.Int).Value = totalRegistros;
-                    cmd.Parameters.Add("@det", SqlDbType.NVarChar, -1).Value = detalle.ToString();
-                    cmd.Parameters.Add("@sql", SqlDbType.NVarChar, -1).Value = scriptTexto;
-
-                    cmd.ExecuteNonQuery();
-                }
-
+                GuardarSnapshot(modulos, etiqueta, esDeshacer: false);
                 SetIdle(btnSnapshotAuto, "📸 Snapshot Automático");
-                AgregarLog($"✅ Snapshot \"{etiqueta}\" | Módulos: {modulos.Count} | Registros: {totalRegistros}");
                 RefrescarListaSnapshots();
-
                 MessageBox.Show(
-                    $"✅ Snapshot guardado en la base de datos.\n\n" +
-                    $"Etiqueta:  {etiqueta}\nMódulos:   {modulosStr}\n" +
-                    $"Filtro:    {filtroDesc}\nRegistros: {totalRegistros}\n\n" +
-                    "Consúltalo en la pestaña '📸 Snapshots'.",
+                    $"✅ Snapshot guardado en la base de datos.\n\nEtiqueta: {etiqueta}",
                     "Snapshot completado", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
@@ -281,14 +281,47 @@ namespace CapaPresentacion
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // GuardarSnapshot — lógica central reutilizable
+        // ─────────────────────────────────────────────────────────────────────
+        private void GuardarSnapshot(List<string> modulos, string etiqueta, bool esDeshacer)
+        {
+            var detalle = new StringBuilder();
+            int totalReg = GenerarScriptCompleto(modulos, detalle, out StringBuilder sbScript);
+            string filtro = ObtenerDescripcionFiltroFecha();
+            string mods = string.Join(", ", modulos);
+
+            using (var con = new SqlConnection(CD_Conexion.Conn))
+            {
+                con.Open();
+                // Si es el snapshot de "deshacer", reemplaza el anterior del mismo tipo
+                if (esDeshacer)
+                {
+                    var del = new SqlCommand(
+                        $"DELETE FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE etiqueta = @et", con);
+                    del.Parameters.AddWithValue("@et", ETIQUETA_DESHACER);
+                    del.ExecuteNonQuery();
+                }
+
+                var cmd = new SqlCommand(
+                    $"INSERT INTO [dbo].[{TABLA_SNAPSHOTS}] " +
+                    "(etiqueta, modulos, filtro_fecha, total_registros, detalle_tablas, script_sql) " +
+                    "VALUES (@et, @mod, @filtro, @total, @det, @sql)", con);
+                cmd.CommandTimeout = 300;
+
+                cmd.Parameters.Add("@et", SqlDbType.NVarChar, 100).Value = etiqueta;
+                cmd.Parameters.Add("@mod", SqlDbType.NVarChar, 500).Value = mods;
+                cmd.Parameters.Add("@filtro", SqlDbType.NVarChar, 100).Value = filtro;
+                cmd.Parameters.Add("@total", SqlDbType.Int).Value = totalReg;
+                cmd.Parameters.Add("@det", SqlDbType.NVarChar, -1).Value = detalle.ToString();
+                cmd.Parameters.Add("@sql", SqlDbType.NVarChar, -1).Value = sbScript.ToString();
+                cmd.ExecuteNonQuery();
+            }
+
+            AgregarLog($"✅ Snapshot \"{etiqueta}\" | Módulos: {modulos.Count} | Registros: {totalReg}");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // GENERACIÓN DEL SCRIPT
-        // Cada tabla genera un bloque delimitado por marcadores:
-        //   -- INICIO_TABLA:nombre
-        //   ... sentencias ...
-        //   -- FIN_TABLA:nombre
-        //
-        // Esto permite que EjecutarScript divida y ejecute cada bloque completo
-        // en lugar de intentar parsear línea a línea (que rompía con BEGIN/END).
         // ─────────────────────────────────────────────────────────────────────
         private int GenerarScriptCompleto(List<string> modulos,
             StringBuilder detalleTablas, out StringBuilder sbScript)
@@ -304,15 +337,13 @@ namespace CapaPresentacion
             sbScript.AppendLine("SET NOCOUNT ON;");
             sbScript.AppendLine();
 
-            // Recopilar todas las tablas en orden FK-safe
             var tablasIncluidas = new List<string>();
             foreach (string modulo in modulos)
                 if (ModulosTablas.TryGetValue(modulo, out string[] tablas))
                     foreach (string t in tablas)
-                        if (!tablasIncluidas.Contains(t))
+                        if (!tablasIncluidas.Contains(t) && !TablasProtegidas.Contains(t))
                             tablasIncluidas.Add(t);
 
-            // Ordenar según OrdenRestauracion
             var tablasOrdenadas = new List<string>();
             foreach (string t in OrdenRestauracion)
                 if (tablasIncluidas.Contains(t))
@@ -330,10 +361,8 @@ namespace CapaPresentacion
 
                 bool tieneIdentity = TieneColumnaIdentity(tabla);
 
-                // Marcador de inicio (usado por EjecutarScript para dividir bloques)
                 sbScript.AppendLine($"-- INICIO_TABLA:{tabla}");
 
-                // Construir el bloque completo de la tabla como una sola transacción
                 var bloque = new StringBuilder();
                 bloque.AppendLine($"BEGIN TRY");
                 bloque.AppendLine($"    BEGIN TRANSACTION;");
@@ -363,7 +392,7 @@ namespace CapaPresentacion
                 sbScript.AppendLine();
 
                 progressBar.Value = Math.Min(progressBar.Value + 1, progressBar.Maximum);
-                System.Windows.Forms.Application.DoEvents();
+                Application.DoEvents();
             }
 
             sbScript.AppendLine($"-- FIN — Total registros: {totalGlobal}");
@@ -374,13 +403,11 @@ namespace CapaPresentacion
         {
             var names = new List<string>();
             var vals = new List<string>();
-
             foreach (DataColumn col in cols)
             {
                 names.Add($"[{col.ColumnName}]");
                 vals.Add(FormatearValor(row[col], col));
             }
-
             return $"    INSERT INTO [dbo].[{tabla}] ({string.Join(", ", names)}) VALUES ({string.Join(", ", vals)});";
         }
 
@@ -418,13 +445,13 @@ namespace CapaPresentacion
             {
                 Text = "Etiqueta del Snapshot",
                 Size = new Size(430, 185),
-                StartPosition = System.Windows.Forms.FormStartPosition.CenterParent,
-                FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog,
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false,
                 MinimizeBox = false,
                 BackColor = Color.FromArgb(236, 240, 241)
             };
-            var lbl = new System.Windows.Forms.Label
+            var lbl = new Label
             {
                 Text = "Título descriptivo del snapshot:",
                 Font = new Font("Segoe UI", 9F),
@@ -432,7 +459,7 @@ namespace CapaPresentacion
                 Location = new Point(15, 18),
                 Size = new Size(395, 20)
             };
-            var txt = new System.Windows.Forms.TextBox
+            var txt = new TextBox
             {
                 Font = new Font("Segoe UI", 10F),
                 Location = new Point(15, 44),
@@ -441,13 +468,15 @@ namespace CapaPresentacion
                 Text = $"Snapshot {DateTime.Now:dd/MM/yyyy HH:mm}"
             };
             var btnOk = MakeBtn("✅ Guardar", Color.FromArgb(142, 68, 173), new Point(200, 96), new Size(100, 36));
-            btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
+            btnOk.DialogResult = DialogResult.OK;
             var btnCx = MakeBtn("✗ Cancelar", Color.FromArgb(149, 165, 166), new Point(308, 96), new Size(102, 36));
-            btnCx.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            dlg.Controls.AddRange(new System.Windows.Forms.Control[] { lbl, txt, btnOk, btnCx });
+            btnCx.DialogResult = DialogResult.Cancel;
+            dlg.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCx });
             dlg.AcceptButton = btnOk; dlg.CancelButton = btnCx;
-            return dlg.ShowDialog(this) == System.Windows.Forms.DialogResult.OK
-                ? (string.IsNullOrWhiteSpace(txt.Text) ? $"Snapshot {DateTime.Now:dd/MM/yyyy HH:mm}" : txt.Text.Trim())
+            return dlg.ShowDialog(this) == DialogResult.OK
+                ? (string.IsNullOrWhiteSpace(txt.Text)
+                    ? $"Snapshot {DateTime.Now:dd/MM/yyyy HH:mm}"
+                    : txt.Text.Trim())
                 : null;
         }
 
@@ -465,11 +494,12 @@ namespace CapaPresentacion
                     $"SELECT id, etiqueta, fecha_creacion, modulos, filtro_fecha, total_registros, " +
                     $"DATALENGTH(script_sql)/1024 AS tamano_kb " +
                     $"FROM [dbo].[{TABLA_SNAPSHOTS}] ORDER BY fecha_creacion DESC", con))
-                {
                     adapter.Fill(dt);
-                }
+
                 dgvSnapshots.DataSource = dt;
                 ConfigurarColumnasSnapshots();
+                ColorearFilasSnapshots();
+                ActualizarBtnDeshacer();
             }
             catch (Exception ex) { AgregarLog($"⚠️ RefrescarListaSnapshots: {ex.Message}"); }
         }
@@ -484,6 +514,21 @@ namespace CapaPresentacion
             if (dgvSnapshots.Columns.Contains("filtro_fecha")) { dgvSnapshots.Columns["filtro_fecha"].HeaderText = "Filtro"; dgvSnapshots.Columns["filtro_fecha"].FillWeight = 18; }
             if (dgvSnapshots.Columns.Contains("total_registros")) { dgvSnapshots.Columns["total_registros"].HeaderText = "Regs."; dgvSnapshots.Columns["total_registros"].FillWeight = 10; }
             if (dgvSnapshots.Columns.Contains("tamano_kb")) { dgvSnapshots.Columns["tamano_kb"].HeaderText = "KB"; dgvSnapshots.Columns["tamano_kb"].FillWeight = 7; }
+        }
+
+        // Colorear la fila de "deshacer" para distinguirla
+        private void ColorearFilasSnapshots()
+        {
+            foreach (DataGridViewRow row in dgvSnapshots.Rows)
+            {
+                if (row.Cells["etiqueta"].Value?.ToString() == ETIQUETA_DESHACER)
+                {
+                    row.DefaultCellStyle.BackColor = Color.FromArgb(255, 243, 205);
+                    row.DefaultCellStyle.ForeColor = Color.FromArgb(133, 77, 14);
+                    // Mostrar texto amigable en lugar del token interno
+                    row.Cells["etiqueta"].Value = "↩️ Estado anterior (Deshacer)";
+                }
+            }
         }
 
         private void DgvSnapshots_SelectionChanged(object sender, EventArgs e)
@@ -502,7 +547,8 @@ namespace CapaPresentacion
                     using (var r = cmd.ExecuteReader())
                     {
                         if (!r.Read()) { LimpiarDetalleSnapshot(); return; }
-                        lblDetEtiqueta.Text = r["etiqueta"]?.ToString() ?? "";
+                        string etiqueta = r["etiqueta"]?.ToString() ?? "";
+                        lblDetEtiqueta.Text = etiqueta == ETIQUETA_DESHACER ? "↩️ Estado anterior (Deshacer)" : etiqueta;
                         lblDetFecha.Text = Convert.ToDateTime(r["fecha_creacion"]).ToString("dd/MM/yyyy HH:mm:ss");
                         lblDetModulos.Text = r["modulos"]?.ToString() ?? "";
                         lblDetFiltro.Text = r["filtro_fecha"]?.ToString() ?? "Todos los datos actuales";
@@ -524,6 +570,27 @@ namespace CapaPresentacion
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // BOTÓN DESHACER — visibilidad
+        // ─────────────────────────────────────────────────────────────────────
+        private void ActualizarBtnDeshacer()
+        {
+            try
+            {
+                using (var con = new SqlConnection(CD_Conexion.Conn))
+                {
+                    con.Open();
+                    var cmd = new SqlCommand(
+                        $"SELECT COUNT(*) FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE etiqueta=@et", con);
+                    cmd.Parameters.AddWithValue("@et", ETIQUETA_DESHACER);
+                    bool existe = Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                    btnDeshacerUltima.Visible = existe;
+                    btnDeshacerUltima.Text = "↩️ Deshacer última operación";
+                }
+            }
+            catch { btnDeshacerUltima.Visible = false; }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // RESTAURAR SNAPSHOT
         // ─────────────────────────────────────────────────────────────────────
         private void btnRestaurarSnapshot_Click(object sender, EventArgs e)
@@ -537,13 +604,17 @@ namespace CapaPresentacion
                     $"⚠️ RESTAURACIÓN COMPLETA — ¿Continuar?\n\n" +
                     $"Snapshot: \"{etiqueta}\"\nFecha:    {fecha}\n\n" +
                     "• Los datos actuales serán REEMPLAZADOS por los del snapshot.\n" +
-                    "• Esta operación no se puede deshacer. ¿Continuar?",
+                    "• Se guardará automáticamente un snapshot del estado actual para poder deshacerlo.\n\n" +
+                    "¿Continuar?",
                     "Confirmar restauración completa",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != System.Windows.Forms.DialogResult.Yes) return;
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
 
             try
             {
                 SetBusy(btnRestaurarSnapshot, "♻️ Restaurar", "⏳ Restaurando...");
+
+                // FIX #3 — Crear snapshot "deshacer" ANTES de restaurar
+                CrearSnapshotDeshacer();
 
                 string script;
                 using (var con = new SqlConnection(CD_Conexion.Conn))
@@ -564,9 +635,10 @@ namespace CapaPresentacion
 
                 SetIdle(btnRestaurarSnapshot, "♻️ Restaurar");
                 AgregarLog($"✅ Restauración completa: \"{etiqueta}\" ({fecha})");
+                RefrescarListaSnapshots();
                 MessageBox.Show(
                     $"✅ Snapshot \"{etiqueta}\" restaurado correctamente.\n\n" +
-                    "La base de datos refleja ahora el estado del snapshot.",
+                    "Puedes volver al estado anterior pulsando  ↩️ Deshacer última operación.",
                     "Restauración completada", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
@@ -577,19 +649,96 @@ namespace CapaPresentacion
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // EJECUTAR SCRIPT  — NUEVA IMPLEMENTACIÓN
-        //
-        // En lugar de parsear línea a línea (que rompía con BEGIN/END anidados),
-        // ahora divide el script usando los marcadores INICIO_TABLA / FIN_TABLA
-        // que el generador ya coloca, y ejecuta cada bloque de una tabla como
-        // una sola llamada a SqlCommand. Esto garantiza:
-        //   • Las transacciones BEGIN/END TRY/CATCH funcionan íntegras.
-        //   • SET IDENTITY_INSERT se aplica dentro de la misma conexión/bloque.
-        //   • Los errores de una tabla no abortan las demás.
+        // DESHACER ÚLTIMA OPERACIÓN
+        // ─────────────────────────────────────────────────────────────────────
+        private void btnDeshacerUltima_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show(
+                    "↩️ DESHACER última operación\n\n" +
+                    "Esto restaurará la base de datos al estado que tenía JUSTO ANTES\n" +
+                    "de la última restauración o importación.\n\n" +
+                    "¿Continuar?",
+                    "Deshacer última operación",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+
+            try
+            {
+                SetBusy(btnDeshacerUltima, "↩️ Deshacer última operación", "⏳ Deshaciendo...");
+
+                string script;
+                using (var con = new SqlConnection(CD_Conexion.Conn))
+                {
+                    con.Open();
+                    var cmd = new SqlCommand(
+                        $"SELECT CAST(script_sql AS NVARCHAR(MAX)) FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE etiqueta=@et",
+                        con);
+                    cmd.Parameters.AddWithValue("@et", ETIQUETA_DESHACER);
+                    cmd.CommandTimeout = 120;
+                    script = cmd.ExecuteScalar()?.ToString() ?? "";
+                }
+
+                if (string.IsNullOrWhiteSpace(script))
+                {
+                    MsgWarn("No hay snapshot de deshacer disponible.");
+                    SetIdle(btnDeshacerUltima, "↩️ Deshacer última operación");
+                    return;
+                }
+
+                EjecutarScript(script);
+
+                // Eliminar el snapshot de deshacer después de usarlo
+                using (var con = new SqlConnection(CD_Conexion.Conn))
+                {
+                    con.Open();
+                    var del = new SqlCommand(
+                        $"DELETE FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE etiqueta=@et", con);
+                    del.Parameters.AddWithValue("@et", ETIQUETA_DESHACER);
+                    del.ExecuteNonQuery();
+                }
+
+                SetIdle(btnDeshacerUltima, "↩️ Deshacer última operación");
+                AgregarLog("✅ Deshecho con éxito — estado anterior restaurado");
+                RefrescarListaSnapshots();
+
+                MessageBox.Show(
+                    "✅ Estado anterior restaurado correctamente.\n\n" +
+                    "La base de datos volvió al punto previo a la última operación.",
+                    "Deshacer completado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                SetIdle(btnDeshacerUltima, "↩️ Deshacer última operación");
+                AgregarLog("❌ " + ex.Message); MsgErr(ex.Message);
+            }
+        }
+
+        // Crea/reemplaza el snapshot de "deshacer" con TODOS los módulos actuales
+        private void CrearSnapshotDeshacer()
+        {
+            try
+            {
+                var todosModulos = new List<string>(ModulosTablas.Keys);
+                // Forzar filtro "todos los datos" para el snapshot de deshacer
+                bool guardadoRbtnTodos = rbtnTodosDatos.Checked;
+                rbtnTodosDatos.Checked = true;
+
+                GuardarSnapshot(todosModulos, ETIQUETA_DESHACER, esDeshacer: true);
+
+                rbtnTodosDatos.Checked = guardadoRbtnTodos;
+                AgregarLog("📌 Snapshot de deshacer creado (estado actual guardado)");
+            }
+            catch (Exception ex)
+            {
+                AgregarLog($"⚠️ No se pudo crear snapshot de deshacer: {ex.Message}");
+                // No relanzar — el backup de deshacer es opcional, no debe bloquear la restauración
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // EJECUTAR SCRIPT
         // ─────────────────────────────────────────────────────────────────────
         private void EjecutarScript(string script)
         {
-            // Dividir el script en bloques usando los marcadores de tabla
             var bloques = ExtraerBloquesPorTabla(script);
 
             progressBar.Maximum = Math.Max(1, bloques.Count);
@@ -598,61 +747,58 @@ namespace CapaPresentacion
 
             int ejecutados = 0, errores = 0;
 
+            // FIX #2 — Usar UNA sola conexión durante todo el proceso
             using (var con = new SqlConnection(CD_Conexion.Conn))
             {
                 con.Open();
-                con.InfoMessage += (s, ev) => AgregarLog($"   ℹ️ {ev.Message}");
 
-                // Paso 1: deshabilitar todas las FK para evitar errores de orden
+                // Deshabilitar FK
                 try
                 {
-                    new SqlCommand(
-                        "EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';",
-                        con)
+                    new SqlCommand("EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';", con)
                     { CommandTimeout = 60 }.ExecuteNonQuery();
                     AgregarLog("🔓 Restricciones FK deshabilitadas");
                 }
-                catch (Exception ex)
-                {
-                    AgregarLog($"⚠️ No se pudieron deshabilitar FK: {ex.Message}");
-                }
+                catch (Exception ex) { AgregarLog($"⚠️ No se pudieron deshabilitar FK: {ex.Message}"); }
 
-                // Paso 2: ejecutar cada bloque de tabla
+                // Ejecutar cada bloque
                 foreach (var kvp in bloques)
                 {
-                    string nombreTabla = kvp.Key;
-                    string bloque = kvp.Value;
+                    // Saltar tablas protegidas aunque aparezcan en el script
+                    if (TablasProtegidas.Contains(kvp.Key))
+                    {
+                        AgregarLog($"   🔒 {kvp.Key} — protegida, omitida");
+                        progressBar.Value = Math.Min(progressBar.Value + 1, progressBar.Maximum);
+                        Application.DoEvents();
+                        continue;
+                    }
 
                     try
                     {
-                        var cmd = new SqlCommand(bloque, con) { CommandTimeout = 300 };
+                        // FIX #3 — Pasar la conexión YA ABIERTA al comando
+                        var cmd = new SqlCommand(kvp.Value, con) { CommandTimeout = 300 };
                         cmd.ExecuteNonQuery();
                         ejecutados++;
-                        AgregarLog($"   ✅ {nombreTabla}");
+                        AgregarLog($"   ✅ {kvp.Key}");
                     }
                     catch (SqlException ex)
                     {
                         errores++;
-                        AgregarLog($"   ❌ {nombreTabla}: {ex.Message.Substring(0, Math.Min(200, ex.Message.Length))}");
+                        AgregarLog($"   ❌ {kvp.Key}: {ex.Message.Substring(0, Math.Min(200, ex.Message.Length))}");
                     }
 
                     progressBar.Value = Math.Min(progressBar.Value + 1, progressBar.Maximum);
-                    System.Windows.Forms.Application.DoEvents();
+                    Application.DoEvents();
                 }
 
-                // Paso 3: re-habilitar FK
+                // Re-habilitar FK
                 try
                 {
-                    new SqlCommand(
-                        "EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';",
-                        con)
+                    new SqlCommand("EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';", con)
                     { CommandTimeout = 60 }.ExecuteNonQuery();
                     AgregarLog("🔒 Restricciones FK re-habilitadas");
                 }
-                catch (Exception ex)
-                {
-                    AgregarLog($"⚠️ Al re-habilitar FK: {ex.Message}");
-                }
+                catch (Exception ex) { AgregarLog($"⚠️ Al re-habilitar FK: {ex.Message}"); }
             }
 
             progressBar.Visible = false;
@@ -660,16 +806,10 @@ namespace CapaPresentacion
 
             if (errores > 0)
                 MessageBox.Show(
-                    $"La restauración finalizó con {errores} error(es).\n\n" +
-                    "Revisa el log para más detalles. Algunas tablas pueden no haberse restaurado.",
+                    $"La restauración finalizó con {errores} error(es).\n\nRevisa el log para más detalles.",
                     "Restauración con advertencias", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
-        /// <summary>
-        /// Divide el script en pares (nombreTabla, bloqueSQL) usando los marcadores
-        /// -- INICIO_TABLA:nombre  y  -- FIN_TABLA:nombre
-        /// que GenerarScriptCompleto ya inserta.
-        /// </summary>
         private List<KeyValuePair<string, string>> ExtraerBloquesPorTabla(string script)
         {
             var resultado = new List<KeyValuePair<string, string>>();
@@ -681,7 +821,6 @@ namespace CapaPresentacion
             foreach (string linea in lineas)
             {
                 string trim = linea.Trim();
-
                 if (trim.StartsWith("-- INICIO_TABLA:"))
                 {
                     tablaActual = trim.Substring("-- INICIO_TABLA:".Length).Trim();
@@ -696,66 +835,16 @@ namespace CapaPresentacion
                     bloqueActual = new StringBuilder();
                 }
                 else if (tablaActual != null)
-                {
-                    // Ignorar líneas de comentario puras dentro del bloque
-                    // (se puede dejar; SQL las ignora igual)
                     bloqueActual.AppendLine(linea);
-                }
             }
 
-            // Si el script no tiene marcadores (archivo externo antiguo), 
-            // caer en el modo legado línea por línea
             if (resultado.Count == 0)
             {
-                AgregarLog("⚠️ Script sin marcadores de tabla — usando modo legado (línea a línea)");
+                AgregarLog("⚠️ Script sin marcadores — modo legado");
                 resultado.Add(new KeyValuePair<string, string>("(script completo)", script));
             }
 
             return resultado;
-        }
-
-        /// <summary>
-        /// Modo legado: ejecuta el script completo línea a línea.
-        /// Se usa solo para archivos .SQL exportados por versiones anteriores del sistema.
-        /// </summary>
-        private void EjecutarScriptLegado(string script, SqlConnection con)
-        {
-            string[] lineas = script.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-            int ejecutadas = 0, errores = 0;
-
-            // Agrupar por bloques GO
-            var bloques = new List<string>();
-            var bloque = new StringBuilder();
-
-            foreach (string linea in lineas)
-            {
-                if (linea.Trim().Equals("GO", StringComparison.OrdinalIgnoreCase))
-                {
-                    string t = bloque.ToString().Trim();
-                    if (!string.IsNullOrWhiteSpace(t)) bloques.Add(t);
-                    bloque.Clear();
-                }
-                else
-                    bloque.AppendLine(linea);
-            }
-            string ultimo = bloque.ToString().Trim();
-            if (!string.IsNullOrWhiteSpace(ultimo)) bloques.Add(ultimo);
-
-            foreach (string b in bloques)
-            {
-                if (string.IsNullOrWhiteSpace(b) || b.TrimStart().StartsWith("--")) continue;
-                try
-                {
-                    new SqlCommand(b, con) { CommandTimeout = 120 }.ExecuteNonQuery();
-                    ejecutadas++;
-                }
-                catch (SqlException ex)
-                {
-                    errores++;
-                    AgregarLog($"  ⚠️ {ex.Message.Substring(0, Math.Min(150, ex.Message.Length))}");
-                }
-            }
-            AgregarLog($"   Modo legado: {ejecutadas} bloques OK | {errores} errores");
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -767,33 +856,57 @@ namespace CapaPresentacion
             int id = SnapId();
             string etiquetaActual = SnapEtiqueta();
 
+            // No permitir renombrar el snapshot de deshacer
+            if (etiquetaActual == ETIQUETA_DESHACER)
+            {
+                MsgWarn("El snapshot de Deshacer se gestiona automáticamente y no puede renombrarse.");
+                return;
+            }
+
             var dlg = new Form
             {
                 Text = "Renombrar Snapshot",
                 Size = new Size(430, 155),
-                StartPosition = System.Windows.Forms.FormStartPosition.CenterParent,
-                FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog,
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false,
                 MinimizeBox = false,
                 BackColor = Color.FromArgb(236, 240, 241)
             };
-            var lbl = new System.Windows.Forms.Label { Text = "Nueva etiqueta:", Font = new Font("Segoe UI", 9F), ForeColor = Color.FromArgb(52, 73, 94), Location = new Point(15, 18), Size = new Size(200, 20) };
-            var txt = new System.Windows.Forms.TextBox { Font = new Font("Segoe UI", 10F), Location = new Point(15, 40), Size = new Size(395, 28), MaxLength = 90, Text = etiquetaActual };
-            var btnOk = MakeBtn("✅ Guardar", Color.FromArgb(142, 68, 173), new Point(200, 80), new Size(100, 34)); btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
-            var btnCx = MakeBtn("✗ Cancelar", Color.FromArgb(149, 165, 166), new Point(308, 80), new Size(102, 34)); btnCx.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            dlg.Controls.AddRange(new System.Windows.Forms.Control[] { lbl, txt, btnOk, btnCx });
+            var lbl = new Label
+            {
+                Text = "Nueva etiqueta:",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(52, 73, 94),
+                Location = new Point(15, 18),
+                Size = new Size(200, 20)
+            };
+            var txt = new TextBox
+            {
+                Font = new Font("Segoe UI", 10F),
+                Location = new Point(15, 40),
+                Size = new Size(395, 28),
+                MaxLength = 90,
+                Text = etiquetaActual
+            };
+            var btnOk = MakeBtn("✅ Guardar", Color.FromArgb(142, 68, 173), new Point(200, 80), new Size(100, 34));
+            btnOk.DialogResult = DialogResult.OK;
+            var btnCx = MakeBtn("✗ Cancelar", Color.FromArgb(149, 165, 166), new Point(308, 80), new Size(102, 34));
+            btnCx.DialogResult = DialogResult.Cancel;
+            dlg.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCx });
             dlg.AcceptButton = btnOk; dlg.CancelButton = btnCx;
 
-            if (dlg.ShowDialog(this) != System.Windows.Forms.DialogResult.OK) return;
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
             string nueva = txt.Text.Trim();
-            if (string.IsNullOrWhiteSpace(nueva)) return;
+            if (string.IsNullOrWhiteSpace(nueva) || nueva == ETIQUETA_DESHACER) return;
 
             try
             {
                 using (var con = new SqlConnection(CD_Conexion.Conn))
                 {
                     con.Open();
-                    var cmd = new SqlCommand($"UPDATE [dbo].[{TABLA_SNAPSHOTS}] SET etiqueta=@et WHERE id=@id", con);
+                    var cmd = new SqlCommand(
+                        $"UPDATE [dbo].[{TABLA_SNAPSHOTS}] SET etiqueta=@et WHERE id=@id", con);
                     cmd.Parameters.AddWithValue("@et", nueva);
                     cmd.Parameters.AddWithValue("@id", id);
                     cmd.ExecuteNonQuery();
@@ -810,9 +923,18 @@ namespace CapaPresentacion
             int id = SnapId();
             string etiqueta = SnapEtiqueta();
 
-            if (MessageBox.Show($"¿Eliminar el snapshot \"{etiqueta}\"?\nEsta acción no se puede deshacer.",
-                    "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
-                != System.Windows.Forms.DialogResult.Yes) return;
+            if (etiqueta == ETIQUETA_DESHACER)
+            {
+                if (MessageBox.Show("¿Eliminar el snapshot de Deshacer?\nSi lo eliminas, no podrás volver al estado anterior.",
+                        "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                    return;
+            }
+            else
+            {
+                if (MessageBox.Show($"¿Eliminar el snapshot \"{etiqueta}\"?\nEsta acción no se puede deshacer.",
+                        "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                    != DialogResult.Yes) return;
+            }
 
             try
             {
@@ -837,41 +959,16 @@ namespace CapaPresentacion
             List<string> modulos = ObtenerModulosSeleccionados();
             if (modulos.Count == 0) { MsgWarn("Seleccione al menos un módulo."); return; }
 
-            var dlg = new System.Windows.Forms.FolderBrowserDialog
+            var dlg = new FolderBrowserDialog
             { Description = "Seleccione la carpeta destino", ShowNewFolderButton = true };
-            if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-            // Si hay filtro de fecha, avisar cuáles tablas no aplican el filtro
-            ObtenerRangoFechas(out DateTime? desde, out DateTime? hasta);
-            if (desde.HasValue)
-            {
-                // Calcular tablas maestras (sin columna de fecha) que se exportarán completas
-                var sinFiltro = new List<string>();
-                foreach (string modulo in modulos)
-                {
-                    if (!ModulosTablas.TryGetValue(modulo, out string[] tablas)) continue;
-                    foreach (string t in tablas)
-                        if (!ColumnasFecha.ContainsKey(t))
-                            sinFiltro.Add(t);
-                }
-
-                if (sinFiltro.Count > 0)
-                {
-                    string aviso =
-                        $"ℹ️ Las siguientes tablas no tienen columna de fecha y se exportarán COMPLETAS " +
-                        $"(sin filtro de fecha):\n\n• {string.Join("\n• ", sinFiltro)}\n\n" +
-                        "Esto es necesario porque son tablas de referencia (catálogos). ¿Continuar?";
-                    if (MessageBox.Show(aviso, "Aviso — tablas sin filtro de fecha",
-                            MessageBoxButtons.YesNo, MessageBoxIcon.Information)
-                        != System.Windows.Forms.DialogResult.Yes) return;
-                }
-            }
+            if (dlg.ShowDialog() != DialogResult.OK) return;
 
             try
             {
                 SetBusy(btnBackupCSV, "📊 Exportar CSV", "⏳ Exportando...", modulos.Count);
                 string carpeta = Path.Combine(dlg.SelectedPath, $"VetBackup_CSV_{DateTime.Now:yyyyMMdd_HHmm}");
                 Directory.CreateDirectory(carpeta);
+                ObtenerRangoFechas(out DateTime? desde, out DateTime? hasta);
                 int total = 0, archivos = 0;
 
                 foreach (string modulo in modulos)
@@ -879,24 +976,27 @@ namespace CapaPresentacion
                     if (!ModulosTablas.TryGetValue(modulo, out string[] tablas)) continue;
                     foreach (string tabla in tablas)
                     {
+                        if (TablasProtegidas.Contains(tabla)) continue;
                         DataTable dt = ObtenerDatosTablaConFecha(tabla, desde, hasta);
                         if (dt == null || dt.Rows.Count == 0) continue;
                         EscribirCSV(dt, Path.Combine(carpeta, $"{tabla}.csv"));
-                        bool conFiltro = desde.HasValue && ColumnasFecha.ContainsKey(tabla);
-                        AgregarLog($"   ✅ {tabla}.csv — {dt.Rows.Count} registros{(conFiltro ? " (filtrado)" : " (completo)")}");
                         total += dt.Rows.Count; archivos++;
+                        AgregarLog($"   ✅ {tabla}.csv — {dt.Rows.Count} registros");
                     }
-                    progressBar.Value++; System.Windows.Forms.Application.DoEvents();
+                    progressBar.Value++; Application.DoEvents();
                 }
 
                 SetIdle(btnBackupCSV, "📊 Exportar CSV");
-                AgregarLog($"✅ CSV: {archivos} archivos | {total} registros");
-                MessageBox.Show(
-                    $"✅ Exportación CSV completada.\n\nArchivos: {archivos} | Registros: {total}\nCarpeta: {carpeta}",
+                AgregarLog($"✅ CSV: {archivos} archivos | {total} registros → {carpeta}");
+                MessageBox.Show($"✅ Exportación CSV completada.\n\nArchivos: {archivos} | Registros: {total}\nCarpeta: {carpeta}",
                     "CSV exportado", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 System.Diagnostics.Process.Start("explorer.exe", carpeta);
             }
-            catch (Exception ex) { SetIdle(btnBackupCSV, "📊 Exportar CSV"); MsgErr(ex.Message); AgregarLog("❌ " + ex.Message); }
+            catch (Exception ex)
+            {
+                SetIdle(btnBackupCSV, "📊 Exportar CSV");
+                MsgErr(ex.Message); AgregarLog("❌ " + ex.Message);
+            }
         }
 
         // ═════════════════════════════════════════════════════════════════════
@@ -904,88 +1004,135 @@ namespace CapaPresentacion
         // ═════════════════════════════════════════════════════════════════════
         private void btnRestaurar_Click(object sender, EventArgs e)
         {
-            var dlg = new System.Windows.Forms.OpenFileDialog
-            { Title = "Archivo de respaldo", Filter = "Archivo SQL|*.sql|Todos|*.*" };
-            if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            var dlg = new OpenFileDialog { Title = "Archivo de respaldo", Filter = "Archivo SQL|*.sql|Todos|*.*" };
+            if (dlg.ShowDialog() != DialogResult.OK) return;
 
             if (MessageBox.Show(
-                    $"⚠️ La importación reemplazará datos existentes.\n\nArchivo: {Path.GetFileName(dlg.FileName)}\n\n¿Continuar?",
+                    $"⚠️ La importación reemplazará datos existentes.\n\nArchivo: {Path.GetFileName(dlg.FileName)}\n\n" +
+                    "Se guardará un snapshot del estado actual para poder deshacer.\n\n¿Continuar?",
                     "Confirmar restauración", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
-                != System.Windows.Forms.DialogResult.Yes) return;
+                != DialogResult.Yes) return;
 
             try
             {
                 SetBusy(btnRestaurar, "📥 Importar .SQL", "⏳ Restaurando...");
+                CrearSnapshotDeshacer();
                 string contenido = File.ReadAllText(dlg.FileName, Encoding.UTF8);
                 EjecutarScript(contenido);
                 SetIdle(btnRestaurar, "📥 Importar .SQL");
                 AgregarLog($"✅ Restaurado desde: {Path.GetFileName(dlg.FileName)}");
+                RefrescarListaSnapshots();
                 MessageBox.Show(
-                    $"✅ Restauración completada.\nArchivo: {Path.GetFileName(dlg.FileName)}",
+                    $"✅ Restauración completada.\nArchivo: {Path.GetFileName(dlg.FileName)}\n\n" +
+                    "Puedes volver al estado anterior con  ↩️ Deshacer última operación.",
                     "Restauración completada", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex) { SetIdle(btnRestaurar, "📥 Importar .SQL"); MsgErr(ex.Message); AgregarLog("❌ " + ex.Message); }
         }
 
         // ═════════════════════════════════════════════════════════════════════
-        // E) IMPORTAR CSV
+        // E) IMPORTAR CSV  — FIX principal: orden FK + conexión abierta
         // ═════════════════════════════════════════════════════════════════════
         private void btnImportarCSV_Click(object sender, EventArgs e)
         {
-            var dlg = new System.Windows.Forms.OpenFileDialog
+            var dlg = new OpenFileDialog
             { Title = "Importar CSV", Filter = "CSV|*.csv", Multiselect = true };
-            if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            if (dlg.ShowDialog() != DialogResult.OK) return;
 
             if (MessageBox.Show(
-                    $"⚠️ Se importarán {dlg.FileNames.Length} archivo(s).\n\n" +
-                    "IMPORTANTE: Los datos actuales de cada tabla serán ELIMINADOS y reemplazados " +
-                    "por los del CSV. Esta acción no se puede deshacer.\n\n¿Continuar?",
-                    "Confirmar importación CSV", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
-                != System.Windows.Forms.DialogResult.Yes) return;
+                    $"Se importarán {dlg.FileNames.Length} archivo(s).\n\n" +
+                    "• Se deshabilitarán temporalmente las restricciones FK.\n" +
+                    "• Registros duplicados serán omitidos.\n" +
+                    "• Se guardará snapshot para poder deshacer.\n\n¿Continuar?",
+                    "Confirmar importación", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                != DialogResult.Yes) return;
 
             try
             {
-                // Ordenar los archivos en el orden FK-safe de restauración
-                // para evitar errores de restricciones de clave foránea
-                var archivosOrdenados = new List<string>(dlg.FileNames);
-                archivosOrdenados.Sort((a, b) =>
-                {
-                    string ta = Path.GetFileNameWithoutExtension(a);
-                    string tb = Path.GetFileNameWithoutExtension(b);
-                    int ia = OrdenRestauracion.IndexOf(ta);
-                    int ib = OrdenRestauracion.IndexOf(tb);
-                    if (ia < 0) ia = 999;
-                    if (ib < 0) ib = 999;
-                    return ia.CompareTo(ib);
-                });
+                SetBusy(btnImportarCSV, "📤 Importar CSV", "⏳ Importando...", dlg.FileNames.Length);
+                CrearSnapshotDeshacer();
 
-                SetBusy(btnImportarCSV, "📤 Importar CSV", "⏳ Importando...", archivosOrdenados.Count);
                 int total = 0;
                 var errores = new List<string>();
 
-                foreach (string archivo in archivosOrdenados)
+                // Ordenar archivos según OrdenRestauracion para respetar FK
+                string[] archivosOrdenados = OrdenarArchivosPorFK(dlg.FileNames);
+
+                // FIX #2 — Usar UNA conexión para todo el proceso de importación
+                using (var con = new SqlConnection(CD_Conexion.Conn))
                 {
+                    con.Open();
+
+                    // Deshabilitar FK
                     try
                     {
-                        int n = ImportarDesdeCSV(archivo);
-                        total += n;
-                        AgregarLog($"   ✅ {Path.GetFileName(archivo)} — {n} registros reemplazados");
+                        new SqlCommand("EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';", con)
+                        { CommandTimeout = 60 }.ExecuteNonQuery();
+                        AgregarLog("🔓 FK deshabilitadas para importación");
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) { AgregarLog($"⚠️ {ex.Message}"); }
+
+                    foreach (string archivo in archivosOrdenados)
                     {
-                        errores.Add($"{Path.GetFileName(archivo)}: {ex.Message}");
-                        AgregarLog($"   ❌ {Path.GetFileName(archivo)}: {ex.Message}");
+                        string nombreArchivo = Path.GetFileName(archivo);
+                        try
+                        {
+                            int n = ImportarDesdeCSV(archivo, con);
+                            total += n;
+                            AgregarLog($"✅ {nombreArchivo} — {n} registros");
+                        }
+                        catch (Exception ex)
+                        {
+                            string msg = $"{nombreArchivo}: {ex.Message}";
+                            errores.Add(msg);
+                            AgregarLog($"❌ {msg}");
+                        }
+                        progressBar.Value = Math.Min(progressBar.Value + 1, progressBar.Maximum);
+                        Application.DoEvents();
                     }
-                    progressBar.Value++; System.Windows.Forms.Application.DoEvents();
+
+                    // Re-habilitar FK
+                    try
+                    {
+                        new SqlCommand("EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';", con)
+                        { CommandTimeout = 60 }.ExecuteNonQuery();
+                        AgregarLog("🔒 FK re-habilitadas");
+                    }
+                    catch (Exception ex) { AgregarLog($"⚠️ {ex.Message}"); }
                 }
 
                 SetIdle(btnImportarCSV, "📤 Importar CSV");
-                string msg = $"✅ Importación CSV completada.\nRegistros importados: {total}";
-                if (errores.Count > 0) msg += $"\n\n⚠️ Errores ({errores.Count}):\n" + string.Join("\n", errores);
-                MessageBox.Show(msg, "Importación CSV", MessageBoxButtons.OK,
+                RefrescarListaSnapshots();
+
+                string msg2 = $"✅ Importación completada.\nRegistros importados: {total}";
+                if (errores.Count > 0) msg2 += $"\n\n⚠️ Errores ({errores.Count}):\n" + string.Join("\n", errores);
+                msg2 += "\n\nPuedes deshacer con  ↩️ Deshacer última operación.";
+                MessageBox.Show(msg2, "Importación CSV", MessageBoxButtons.OK,
                     errores.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
             }
             catch (Exception ex) { SetIdle(btnImportarCSV, "📤 Importar CSV"); MsgErr(ex.Message); }
+        }
+
+        // Ordena los archivos CSV según la lista OrdenRestauracion
+        private string[] OrdenarArchivosPorFK(string[] archivos)
+        {
+            var resultado = new List<string>();
+            // Primero los que aparecen en OrdenRestauracion (en ese orden)
+            foreach (string tabla in OrdenRestauracion)
+            {
+                foreach (string archivo in archivos)
+                {
+                    string nombreSinExt = Path.GetFileNameWithoutExtension(archivo);
+                    if (string.Equals(nombreSinExt, tabla, StringComparison.OrdinalIgnoreCase)
+                        && !resultado.Contains(archivo))
+                        resultado.Add(archivo);
+                }
+            }
+            // Luego los que no están en la lista
+            foreach (string archivo in archivos)
+                if (!resultado.Contains(archivo))
+                    resultado.Add(archivo);
+            return resultado.ToArray();
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -1017,7 +1164,6 @@ namespace CapaPresentacion
                 { "categoria_producto", "fecha_creacion" },
             };
 
-        // FIX: parámetro hasta agregado para soportar rbtnDesdeHasta correctamente
         private DataTable ObtenerDatosTablaConFecha(string tabla, DateTime? desde, DateTime? hasta)
         {
             try
@@ -1029,7 +1175,6 @@ namespace CapaPresentacion
                     if (hasta.HasValue)
                         where += $" AND [{col}] <= '{hasta.Value:yyyy-MM-dd 23:59:59}'";
                 }
-
                 var dt = new DataTable(tabla);
                 using (var con = new SqlConnection(CD_Conexion.Conn))
                 using (var adapter = new SqlDataAdapter($"SELECT * FROM [dbo].[{tabla}]{where}", con)
@@ -1059,96 +1204,77 @@ namespace CapaPresentacion
             File.WriteAllText(ruta, sb.ToString(), Encoding.UTF8);
         }
 
-        private int ImportarDesdeCSV(string archivo)
+        // FIX #4 — ImportarDesdeCSV acepta una conexión ya abierta
+        private int ImportarDesdeCSV(string archivo, SqlConnection con)
         {
             string tabla = Path.GetFileNameWithoutExtension(archivo);
+
+            // Verificar que la tabla sea válida y no esté protegida
+            if (TablasProtegidas.Contains(tabla))
+                throw new Exception($"La tabla '{tabla}' está protegida y no puede reemplazarse.");
+
             bool valida = false;
             foreach (var kvp in ModulosTablas)
                 foreach (string t in kvp.Value)
                     if (t.Equals(tabla, StringComparison.OrdinalIgnoreCase)) { valida = true; break; }
-            if (!valida) throw new Exception($"Tabla '{tabla}' no reconocida.");
-
-            // Tabla protegida: nunca borrar sesiones ni snapshots
-            if (TablasProtegidas.Contains(tabla))
-                throw new Exception($"La tabla '{tabla}' está protegida y no puede ser reemplazada.");
+            if (!valida) throw new Exception($"Tabla '{tabla}' no reconocida en el sistema.");
 
             string[] lineas = File.ReadAllLines(archivo, Encoding.UTF8);
             if (lineas.Length < 2) return 0;
+
             string[] headers = ParsearCSV(lineas[0]);
             int importados = 0;
 
-            // Determinar el orden FK-safe inverso para el DELETE
-            // (hay que borrar en orden inverso al de restauración para respetar FK)
-            int posTabla = OrdenRestauracion.IndexOf(tabla);
-
-            using (var con = new SqlConnection(CD_Conexion.Conn))
+            // IDENTITY_INSERT — solo si la tabla tiene columna identity
+            bool hayIdentity = TieneColumnaIdentityCon(tabla, con);
+            if (hayIdentity)
             {
-                con.Open();
-                using (SqlTransaction tx = con.BeginTransaction())
+                try
                 {
-                    try
-                    {
-                        // 1. Deshabilitar FK de esta tabla para hacer el DELETE limpio
-                        new SqlCommand(
-                            $"ALTER TABLE [dbo].[{tabla}] NOCHECK CONSTRAINT ALL;",
-                            con, tx)
-                        { CommandTimeout = 30 }.ExecuteNonQuery();
-
-                        // 2. Borrar TODOS los registros actuales (sustitución completa)
-                        new SqlCommand($"DELETE FROM [dbo].[{tabla}];", con, tx)
-                        { CommandTimeout = 120 }.ExecuteNonQuery();
-
-                        // 3. Habilitar IDENTITY_INSERT si aplica
-                        bool tieneIdentity = TieneColumnaIdentity(tabla);
-                        if (tieneIdentity)
-                            new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] ON;", con, tx)
-                            { CommandTimeout = 10 }.ExecuteNonQuery();
-
-                        // 4. Insertar todos los registros del CSV
-                        var cn = new List<string>();
-                        var pn = new List<string>();
-                        for (int j = 0; j < headers.Length; j++)
-                        {
-                            cn.Add($"[{headers[j]}]");
-                            pn.Add($"@p{j}");
-                        }
-                        string sqlInsert = $"INSERT INTO [dbo].[{tabla}] " +
-                                           $"({string.Join(", ", cn)}) " +
-                                           $"VALUES ({string.Join(", ", pn)});";
-
-                        for (int i = 1; i < lineas.Length; i++)
-                        {
-                            if (string.IsNullOrWhiteSpace(lineas[i])) continue;
-                            string[] vals = ParsearCSV(lineas[i]);
-                            if (vals.Length != headers.Length) continue;
-
-                            var cmd = new SqlCommand(sqlInsert, con, tx) { CommandTimeout = 30 };
-                            for (int j = 0; j < vals.Length; j++)
-                                cmd.Parameters.AddWithValue($"@p{j}",
-                                    string.IsNullOrEmpty(vals[j]) ? (object)DBNull.Value : vals[j]);
-                            try { cmd.ExecuteNonQuery(); importados++; } catch { /* fila con error: continuar */ }
-                        }
-
-                        // 5. Restaurar IDENTITY_INSERT y FK
-                        if (tieneIdentity)
-                            new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] OFF;", con, tx)
-                            { CommandTimeout = 10 }.ExecuteNonQuery();
-
-                        new SqlCommand(
-                            $"ALTER TABLE [dbo].[{tabla}] WITH CHECK CHECK CONSTRAINT ALL;",
-                            con, tx)
-                        { CommandTimeout = 30 }.ExecuteNonQuery();
-
-                        tx.Commit();
-                    }
-                    catch
-                    {
-                        tx.Rollback();
-                        throw;
-                    }
+                    new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] ON", con).ExecuteNonQuery();
                 }
+                catch { hayIdentity = false; }
             }
+
+            for (int i = 1; i < lineas.Length; i++)
+            {
+                if (string.IsNullOrWhiteSpace(lineas[i])) continue;
+                string[] vals = ParsearCSV(lineas[i]);
+                if (vals.Length != headers.Length) continue;
+
+                var cn = new List<string>();
+                var pn = new List<string>();
+                for (int j = 0; j < headers.Length; j++) { cn.Add($"[{headers[j]}]"); pn.Add($"@p{j}"); }
+
+                var cmd = new SqlCommand(
+                    $"IF NOT EXISTS(SELECT 1 FROM [dbo].[{tabla}] WHERE [{headers[0]}]=@p0)\r\n" +
+                    $"  INSERT INTO [dbo].[{tabla}] ({string.Join(",", cn)}) VALUES ({string.Join(",", pn)})",
+                    con);
+                for (int j = 0; j < vals.Length; j++)
+                    cmd.Parameters.AddWithValue($"@p{j}",
+                        string.IsNullOrEmpty(vals[j]) ? (object)DBNull.Value : (object)vals[j]);
+                try { cmd.ExecuteNonQuery(); importados++; } catch { }
+            }
+
+            if (hayIdentity)
+                try { new SqlCommand($"SET IDENTITY_INSERT [dbo].[{tabla}] OFF", con).ExecuteNonQuery(); } catch { }
+
             return importados;
+        }
+
+        // Versión de TieneColumnaIdentity que usa una conexión ya abierta
+        private bool TieneColumnaIdentityCon(string tabla, SqlConnection con)
+        {
+            try
+            {
+                var cmd = new SqlCommand(
+                    "SELECT COUNT(*) FROM sys.columns c " +
+                    "INNER JOIN sys.tables t ON c.object_id = t.object_id " +
+                    "WHERE t.name = @t AND c.is_identity = 1", con);
+                cmd.Parameters.AddWithValue("@t", tabla);
+                return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+            }
+            catch { return false; }
         }
 
         private string[] ParsearCSV(string linea)
@@ -1164,24 +1290,14 @@ namespace CapaPresentacion
             campos.Add(f.ToString()); return campos.ToArray();
         }
 
-        // FIX: firma actualizada para recibir tanto 'desde' como 'hasta'
         private void ObtenerRangoFechas(out DateTime? desde, out DateTime? hasta)
         {
             if (rbtnDesdeHastaHoy.Checked)
-            {
-                desde = dtpFechaInicio.Value.Date;
-                hasta = null; // hasta hoy (sin límite superior)
-            }
+            { desde = dtpFechaInicio.Value.Date; hasta = null; }
             else if (rbtnDesdeHasta.Checked)
-            {
-                desde = dtpFechaInicio.Value.Date;
-                hasta = dtpFechaFin.Value.Date;
-            }
+            { desde = dtpFechaInicio.Value.Date; hasta = dtpFechaFin.Value.Date; }
             else
-            {
-                desde = null;
-                hasta = null;
-            }
+            { desde = null; hasta = null; }
         }
 
         private string ObtenerDescripcionFiltroFecha()
@@ -1196,36 +1312,61 @@ namespace CapaPresentacion
             if (dgvSnapshots.SelectedRows.Count > 0) return true;
             MsgWarn("Seleccione un snapshot de la lista."); return false;
         }
-        private int SnapId() => Convert.ToInt32(dgvSnapshots.CurrentRow.Cells["id"].Value);
-        private string SnapEtiqueta() => dgvSnapshots.CurrentRow.Cells["etiqueta"].Value?.ToString() ?? "";
-        private string SnapFecha() => Convert.ToDateTime(dgvSnapshots.CurrentRow.Cells["fecha_creacion"].Value).ToString("dd/MM/yyyy HH:mm");
 
-        private void SetBusy(System.Windows.Forms.Button btn, string textoOriginal, string textoBusy, int maxProg = 1)
+        // SnapEtiqueta devuelve el valor REAL de la BD (el token interno, no el texto decorado)
+        private int SnapId()
+        {
+            if (dgvSnapshots.CurrentRow == null) return -1;
+            return Convert.ToInt32(dgvSnapshots.CurrentRow.Cells["id"].Value);
+        }
+        private string SnapEtiqueta()
+        {
+            if (dgvSnapshots.CurrentRow == null) return "";
+            // Recuperar desde BD para obtener el valor real, no el decorado
+            try
+            {
+                using (var con = new SqlConnection(CD_Conexion.Conn))
+                {
+                    con.Open();
+                    var cmd = new SqlCommand(
+                        $"SELECT etiqueta FROM [dbo].[{TABLA_SNAPSHOTS}] WHERE id=@id", con);
+                    cmd.Parameters.AddWithValue("@id", SnapId());
+                    return cmd.ExecuteScalar()?.ToString() ?? "";
+                }
+            }
+            catch { return dgvSnapshots.CurrentRow.Cells["etiqueta"].Value?.ToString() ?? ""; }
+        }
+        private string SnapFecha() =>
+            Convert.ToDateTime(dgvSnapshots.CurrentRow?.Cells["fecha_creacion"].Value).ToString("dd/MM/yyyy HH:mm");
+
+        private void SetBusy(Button btn, string textoOriginal, string textoBusy, int maxProg = 1)
         {
             btn.Enabled = false; btn.Text = textoBusy;
             progressBar.Maximum = maxProg; progressBar.Value = 0; progressBar.Visible = true;
         }
-        private void SetIdle(System.Windows.Forms.Button btn, string texto)
+        private void SetIdle(Button btn, string texto)
+        { btn.Enabled = true; btn.Text = texto; progressBar.Visible = false; }
+
+        private Button MakeBtn(string text, Color back, Point loc, Size size)
         {
-            btn.Enabled = true; btn.Text = texto; progressBar.Visible = false;
-        }
-        private System.Windows.Forms.Button MakeBtn(string text, Color back, Point loc, Size size)
-        {
-            var b = new System.Windows.Forms.Button
+            var b = new Button
             {
                 Text = text,
                 BackColor = back,
                 ForeColor = Color.White,
                 Location = loc,
                 Size = size,
-                FlatStyle = System.Windows.Forms.FlatStyle.Flat,
+                FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Cursor = System.Windows.Forms.Cursors.Hand
+                Cursor = Cursors.Hand
             };
             b.FlatAppearance.BorderSize = 0;
             return b;
         }
-        private void MsgWarn(string msg) => MessageBox.Show(msg, "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        private void MsgErr(string msg) => MessageBox.Show("❌ " + msg, "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+        private void MsgWarn(string msg) =>
+            MessageBox.Show(msg, "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        private void MsgErr(string msg) =>
+            MessageBox.Show("❌ " + msg, "Sistema Veterinaria", MessageBoxButtons.OK, MessageBoxIcon.Error);
     }
 }

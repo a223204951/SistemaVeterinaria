@@ -352,7 +352,7 @@ namespace CapaPresentacion
                 this.lblSnapTitulo, this.lblSnapDesc,
                 this.btnRestaurarSnapshot, this.btnRenombrarSnapshot, this.btnEliminarSnapshot });
             this.panelSnapshotTop.Location = new Point(10, 8);
-            this.panelSnapshotTop.Size = new Size(1135, 90);
+            this.panelSnapshotTop.Size = new Size(1135, 98);
 
             this.lblSnapTitulo.AutoSize = true;
             this.lblSnapTitulo.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
@@ -370,6 +370,16 @@ namespace CapaPresentacion
             SetBtnSnap(this.btnRenombrarSnapshot, "✏️ Renombrar", Color.FromArgb(52, 152, 219), new Point(811, 12), new Size(150, 40), this.btnRenombrarSnapshot_Click);
             SetBtnSnap(this.btnEliminarSnapshot, "🗑️ Eliminar", Color.FromArgb(231, 76, 60), new Point(969, 12), new Size(150, 40), this.btnEliminarSnapshot_Click);
 
+            // ── btnDeshacerUltima ─────────────────────────────────────
+            this.btnDeshacerUltima = new System.Windows.Forms.Button();
+            SetBtnSnap(this.btnDeshacerUltima, "↩️ Deshacer última operación",
+                      Color.FromArgb(230, 126, 34),
+                      new Point(648, 58),
+                      new Size(471, 28),
+                      this.btnDeshacerUltima_Click);
+            this.btnDeshacerUltima.Visible = false;   // se activa automáticamente
+            this.panelSnapshotTop.Controls.Add(this.btnDeshacerUltima);
+            
             // dgvSnapshots
             this.dgvSnapshots.AllowUserToAddRows = false;
             this.dgvSnapshots.AllowUserToDeleteRows = false;
@@ -603,6 +613,7 @@ namespace CapaPresentacion
         private Button btnRenombrarSnapshot;
         private Button btnEliminarSnapshot;
         private DataGridView dgvSnapshots;
+        private Button btnDeshacerUltima;
 
         // Tab 2 — panel detalle
         private Panel panelDetalle;
