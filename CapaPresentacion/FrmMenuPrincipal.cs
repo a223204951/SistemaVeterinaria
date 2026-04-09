@@ -74,11 +74,13 @@ namespace CapaPresentacion
             btnAuditoria.Visible = esAdmin || TryVer(rol, "Auditoria");
             btnSesiones.Visible = esAdmin || TryVer(rol, "Sesiones");
             btnCategorias.Visible = esAdmin;
-            btnBackup.Visible = esAdmin; // ← SOLO ADMINISTRADOR
+            btnBackup.Visible = esAdmin;
+            btnUsuarios.Visible = esAdmin;
+
 
             panelAdministracion.Visible =
                 btnAuditoria.Visible || btnSesiones.Visible ||
-                btnCategorias.Visible || btnBackup.Visible;
+                btnCategorias.Visible || btnBackup.Visible || btnUsuarios.Visible;
         }
 
         private bool TryVer(string rol, string modulo)
@@ -313,6 +315,9 @@ namespace CapaPresentacion
 
         private void btnProveedores_Click(object sender, EventArgs e)
             => AbrirFormularioHijo(new FrmListadoProveedores());
+
+        private void btnUsuarios_Click(object sender, EventArgs e)
+            => AbrirFormularioHijo(new FrmListadoUsuarios());
 
         // ─────────────────────────────────────────────────────────────────────
         // VETERINARIO

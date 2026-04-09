@@ -16,7 +16,6 @@ namespace CapaDatos
         public string Acceso { get; set; }
         public string Estado { get; set; }
         public int Idempleado { get; set; }
-        public string Buscar { get; set; }
 
         // ── Listar todos los usuarios ─────────────────────────────────────────
         public DataTable Listar()
