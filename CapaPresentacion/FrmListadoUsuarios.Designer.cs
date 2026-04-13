@@ -205,7 +205,7 @@ namespace CapaPresentacion
             MakeBtn(this.btnNuevo, "➕ Nuevo", Color.FromArgb(46, 204, 113), 730, this.btnNuevo_Click);
             MakeBtn(this.btnEditar, "✏️ Editar", Color.FromArgb(241, 196, 15), 866, this.btnEditar_Click);
             MakeBtn(this.btnEliminar, "🗑️ Dar de baja", Color.FromArgb(231, 76, 60), 1002, this.btnEliminar_Click);
-            MakeBtn(this.btnResetPass, "🔑 Resetear Pass", Color.FromArgb(142, 68, 173), 5, this.btnResetPass_Click);
+            MakeBtn(this.btnResetPass, "🔑 Resetear Pass", Color.FromArgb(142, 68, 173), 400, this.btnResetPass_Click);
             this.btnResetPass.Size = new System.Drawing.Size(160, 38);
 
             this.panelBotones.Controls.AddRange(new System.Windows.Forms.Control[] {
